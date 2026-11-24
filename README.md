@@ -47,6 +47,14 @@ gradle assembleDebug
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### 3. 自动递增发布（`v0.1.n+1`）与固定正式签名
+
+仓库已配置 [`.github/workflows/release.yml`](.github/workflows/release.yml) 与固定的 Android 发布签名密钥（密钥存放在 GitHub Actions Secrets：`KEYSTORE_BASE64` / `KEYSTORE_PASSWORD` / `KEY_ALIAS` / `KEY_PASSWORD`，证书 SHA-256 指纹：`5E:69:B2:E9:EC:27:1C:E5:5A:4A:82:E2:06:05:DD:10:D6:2F:62:C1:0A:58:D3:9B:DF:40:18:EB:D3:3E:B0:37`）。
+
+- **一键递增发布（推荐）**：在 GitHub 仓库 **Actions → Build & Publish Android Release → Run workflow**，版本号留空点击运行，CI 会自动读取最新 `v0.1.n` 标签，递增为 `v0.1.(n+1)`、打 Tag、使用固定正式密钥签名打包并发布 GitHub Release。
+- **推送标签发布**：也可在本地直接 `git tag -a v0.1.n -m "Release v0.1.n" && git push origin v0.1.n` 触发自动构建与发布。
+- **无缝应用内升级**：从 `v0.1.1` 起均使用同一正式密钥签名，后续 `v0.1.2`、`v0.1.3` ... 可在 App「设置 → 检查并安装更新」中直接免卸载覆盖安装（从早期调试签名的 `v0.1.0` 升级到 `v0.1.1` 时需先卸载一次旧版）。
+
 ## 模拟器实机渲染基准截图（Android 9 · 1024×768 · 160dpi）
 
 | 序号 | 页面 | 对应原包布局 | 截图 |

@@ -3,6 +3,16 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val resolvedVersionName = (project.findProperty("appVersionName") as String?) ?: "0.1.1"
+val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 101
+
+val ksPath = System.getenv("RELEASE_KEYSTORE_PATH")
+val ksPassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+val keyAliasEnv = System.getenv("RELEASE_KEY_ALIAS")
+val keyPasswordEnv = System.getenv("RELEASE_KEY_PASSWORD")
+val hasReleaseKeystore = !ksPath.isNullOrBlank() && file(ksPath).exists() &&
+    !ksPassword.isNullOrBlank() && !keyAliasEnv.isNullOrBlank() && !keyPasswordEnv.isNullOrBlank()
+
 android {
     namespace = "com.shaonianpai.tablet"
     compileSdk = 34
@@ -11,13 +21,29 @@ android {
         applicationId = "com.shaonianpai.tablet"
         minSdk = 21
         targetSdk = 34
-        versionCode = 100
-        versionName = "0.1.0"
+        versionCode = resolvedVersionCode
+        versionName = resolvedVersionName
+    }
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(ksPath!!)
+                storePassword = ksPassword
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

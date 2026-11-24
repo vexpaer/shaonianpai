@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "可选：手动指定发布版本号（留空则自动按最新 v0.1.n 递增为 v0.1.(n+1)）"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -15,6 +20,41 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve Version Tag (v0.1.n+1)
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            CREATE_TAG="false"
+          elif [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            RAW_TAG="${{ github.event.inputs.tag }}"
+            TAG="${RAW_TAG#v}"
+            TAG="v${TAG}"
+            CREATE_TAG="true"
+          else
+            LAST_TAG=$(git tag -l 'v0.1.*' --sort=-v:refname | head -n 1)
+            if [[ -z "$LAST_TAG" ]]; then
+              TAG="v0.1.1"
+            else
+              PATCH="${LAST_TAG#v0.1.}"
+              TAG="v0.1.$((PATCH + 1))"
+            fi
+            CREATE_TAG="true"
+          fi
+
+          VER="${TAG#v}"
+          IFS='.' read -r MAJ MIN PAT <<< "$VER"
+          MAJ=${MAJ:-0}; MIN=${MIN:-1}; PAT=${PAT:-0}
+          VCODE=$((MAJ * 10000 + MIN * 100 + PAT))
+
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${VER}" >> "$GITHUB_OUTPUT"
+          echo "version_code=${VCODE}" >> "$GITHUB_OUTPUT"
+          echo "create_tag=${CREATE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release: tag=${TAG}, versionName=${VER}, versionCode=${VCODE}"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -27,27 +67,78 @@ jobs:
         with:
           gradle-version: "8.8"
 
-      - name: Build Android APK
-        working-directory: android
-        run: gradle assembleDebug --no-daemon
-
-      - name: Prepare Release APK
+      - name: Decode Fixed Release Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          TAG="${GITHUB_REF_NAME:-v0.1.0}"
-          cp android/app/build/outputs/apk/debug/app-debug.apk "shaonianpai-${TAG}.apk"
-          sha256sum "shaonianpai-${TAG}.apk"
+          if [[ -z "$KEYSTORE_BASE64" ]]; then
+            echo "ERROR: KEYSTORE_BASE64 secret is missing!"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "${RUNNER_TEMP}/shaonianpai-release.jks"
+          ls -lh "${RUNNER_TEMP}/shaonianpai-release.jks"
+
+      - name: Build Signed Release APK
+        working-directory: android
+        env:
+          RELEASE_KEYSTORE_PATH: ${{ runner.temp }}/shaonianpai-release.jks
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          gradle assembleRelease --no-daemon \
+            -PappVersionName="${{ steps.ver.outputs.version_name }}" \
+            -PappVersionCode="${{ steps.ver.outputs.version_code }}"
+
+      - name: Prepare Signed APK & Verify Signature
+        id: apk
+        run: |
+          TAG="${{ steps.ver.outputs.tag }}"
+          APK="shaonianpai-${TAG}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          SHA=$(sha256sum "$APK" | awk '{print $1}')
+          echo "apk=${APK}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+          echo "SHA256=${SHA}"
+          CERT_INFO=$(keytool -printcert -jarfile "$APK")
+          echo "$CERT_INFO" | grep -E "Owner:|SHA256:"
+          if echo "$CERT_INFO" | grep -q "CN=Android Debug"; then
+            echo "ERROR: APK was signed with debug key instead of fixed release keystore!"
+            exit 1
+          fi
+
+      - name: Create Tag on Manual Dispatch
+        if: steps.ver.outputs.create_tag == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
+          git push origin "${{ steps.ver.outputs.tag }}"
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          APK="shaonianpai-${TAG}.apk"
-          SHA=$(sha256sum "$APK" | awk '{print $1}')
-          gh release create "$TAG" "$APK" \
-            --title "${TAG} · 少年派学习平板复刻版" \
-            --notes "自动构建发布 ${TAG}。支持平板横屏与手机竖屏，内置 GitHub Releases 自动检查更新与安装。
+          TAG="${{ steps.ver.outputs.tag }}"
+          APK="${{ steps.apk.outputs.apk }}"
+          SHA="${{ steps.apk.outputs.sha256 }}"
+          NOTES=$(cat <<EOF
+          ## 少年派学习平板复刻版 ${TAG}
 
-          - APK: \`${APK}\`
-          - SHA-256: \`${SHA}\`" || gh release upload "$TAG" "$APK" --clobber
+          - **固定正式签名发布**：使用固定发布密钥签名，从 \`${TAG}\` 起后续 \`v0.1.n+1\` 版本均可在客户端「设置 → 检查并安装更新」中直接免卸载覆盖升级。
+          - **自动递增版本**：支持推送 \`v0.1.n\` 标签或在 Actions 页面手动点击 \`Run workflow\` 自动递增发布 \`v0.1.(n+1)\`。
+          - **支持平台**：Android 5.0+（API 21+），自适应平板横屏与手机竖屏。
+
+          ### 安装包校验
+          - 文件：\`${APK}\`
+          - SHA-256：\`${SHA}\`
+          EOF
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" \
+              --title "${TAG} · 少年派学习平板复刻版（正式固定签名）" \
+              --notes "$NOTES"
+          fi
