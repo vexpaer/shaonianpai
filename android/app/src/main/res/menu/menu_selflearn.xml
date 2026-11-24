@@ -9,7 +9,7 @@
     <item
         android:id="@+id/action_source"
         android:title="来源"
-        app:showAsAction="always|withText">
+        app:showAsAction="ifRoom|withText">
         <menu>
             <item android:id="@+id/src_all" android:title="全部来源" />
             <item android:id="@+id/src_school" android:title="本校资源" />
@@ -19,7 +19,7 @@
     <item
         android:id="@+id/action_display"
         android:title="显示设置"
-        app:showAsAction="always|withText">
+        app:showAsAction="ifRoom|withText">
         <menu>
             <group android:checkableBehavior="single">
                 <item android:id="@+id/action_listmode" android:checked="true" android:title="列表显示" />
@@ -30,7 +30,7 @@
     <item
         android:id="@+id/action_group"
         android:title="分组设置"
-        app:showAsAction="always|withText">
+        app:showAsAction="ifRoom|withText">
         <menu>
             <group android:checkableBehavior="single">
                 <item android:id="@+id/action_group_date" android:checked="true" android:title="日期分组" />
@@ -42,7 +42,7 @@
     <item
         android:id="@+id/action_time"
         android:title="时间设置"
-        app:showAsAction="always|withText">
+        app:showAsAction="ifRoom|withText">
         <menu>
             <group android:checkableBehavior="single">
                 <item android:id="@+id/action_last_week" android:title="最近一星期" />

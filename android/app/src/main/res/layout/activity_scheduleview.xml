@@ -17,6 +17,7 @@
         app:titleTextColor="#FFFFFF" />
 
     <LinearLayout
+        android:id="@+id/scheduleContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -24,10 +25,11 @@
 
         <!-- Weekly timetable grid -->
         <ScrollView
+            android:id="@+id/scheduleTableScroll"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="2.2"
-            android:padding="12dp">
+            android:padding="10dp">
 
             <TableLayout
                 android:id="@+id/tableSchedule"
@@ -37,18 +39,20 @@
         </ScrollView>
 
         <View
+            android:id="@+id/scheduleDivider"
             android:layout_width="1dp"
             android:layout_height="match_parent"
             android:background="@color/separateLine" />
 
-        <!-- Right panel: Selected day's lesson materials -->
+        <!-- Selected day's lesson materials -->
         <LinearLayout
+            android:id="@+id/scheduleDetailPanel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="#FAFAFA"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/tvSelectedLesson"
@@ -56,14 +60,14 @@
                 android:layout_height="wrap_content"
                 android:text="周四 · 第2节 语文"
                 android:textColor="@color/primaryColor"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="8dp"
                 android:text="关联课堂资料与自主学习任务"
                 android:textColor="@color/textSecondary"
                 android:textSize="13sp" />

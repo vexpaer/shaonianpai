@@ -11,8 +11,8 @@ android {
         applicationId = "com.shaonianpai.tablet"
         minSdk = 21
         targetSdk = 34
-        versionCode = 52408
-        versionName = "5.2.3.52408-remake"
+        versionCode = 100
+        versionName = "0.1.0"
     }
 
     buildTypes {

@@ -4,13 +4,13 @@
     <item
         android:id="@+id/action_toggle_mode"
         android:title="切换紧凑行"
-        app:showAsAction="always|withText" />
+        app:showAsAction="ifRoom|withText" />
     <item
         android:id="@+id/action_stats"
         android:title="资料统计"
-        app:showAsAction="always|withText" />
+        app:showAsAction="ifRoom|withText" />
     <item
         android:id="@+id/action_save"
         android:title="保存作答"
-        app:showAsAction="always|withText" />
+        app:showAsAction="ifRoom|withText" />
 </menu>

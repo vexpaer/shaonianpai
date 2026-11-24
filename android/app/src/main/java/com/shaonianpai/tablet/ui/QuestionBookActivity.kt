@@ -73,8 +73,19 @@ class QuestionBookActivity : AppCompatActivity() {
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
 
+        val splitContainer = findViewById<LinearLayout>(R.id.splitContainer)
+        val splitDivider = findViewById<android.view.View>(R.id.splitDivider)
         val lv = findViewById<ListView>(R.id.listViewSelector)
         val rv = findViewById<RecyclerView>(R.id.recyclerViewItems)
+
+        if (resources.configuration.screenWidthDp < 600) {
+            val d = resources.displayMetrics.density
+            splitContainer.orientation = LinearLayout.VERTICAL
+            lv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (145 * d).toInt())
+            splitDivider.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (4 * d).toInt())
+            rv.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        }
+
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = QAdapter(questions)
 

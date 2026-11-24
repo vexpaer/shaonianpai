@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFFFF"
     android:orientation="vertical">
 
-    <!-- Authentic top filter bar matching activity_questionbook.xml -->
+    <!-- Top bar with scrollable tags for both portrait phones and landscape tablets -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="56dp"
@@ -14,8 +13,8 @@
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="16dp">
+        android:paddingStart="6dp"
+        android:paddingEnd="12dp">
 
         <ImageButton
             android:id="@+id/btnBack"
@@ -25,64 +24,79 @@
             android:src="@drawable/ic_arrow_back_white_24dp" />
 
         <TextView
-            android:layout_width="140dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="12dp"
             android:text="试题本 · 语文 ▾"
             android:textColor="#FFFFFF"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
+        <HorizontalScrollView
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="36dp"
-            android:text="标签："
-            android:textColor="#E3F2FD"
-            android:textSize="15sp" />
+            android:layout_weight="1"
+            android:scrollbars="none">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="#33FFFFFF"
-            android:paddingLeft="10dp"
-            android:paddingTop="4dp"
-            android:paddingRight="10dp"
-            android:paddingBottom="4dp"
-            android:text="文言文实词"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="#33FFFFFF"
-            android:paddingLeft="10dp"
-            android:paddingTop="4dp"
-            android:paddingRight="10dp"
-            android:paddingBottom="4dp"
-            android:text="古诗文默写"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="标签："
+                    android:textColor="#E3F2FD"
+                    android:textSize="14sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="#33FFFFFF"
-            android:paddingLeft="10dp"
-            android:paddingTop="4dp"
-            android:paddingRight="10dp"
-            android:paddingBottom="4dp"
-            android:text="二次函数"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="#33FFFFFF"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="文言文实词"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="#33FFFFFF"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="古诗文默写"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="#33FFFFFF"
+                    android:paddingLeft="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingRight="10dp"
+                    android:paddingBottom="4dp"
+                    android:text="二次函数"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </HorizontalScrollView>
     </LinearLayout>
 
-    <!-- Authentic SplitView: 200dp left category selector + splitter + right questions -->
+    <!-- Responsive SplitView: horizontal in landscape, vertical in portrait -->
     <LinearLayout
+        android:id="@+id/splitContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -97,6 +111,7 @@
             android:dividerHeight="1dp" />
 
         <View
+            android:id="@+id/splitDivider"
             android:layout_width="6dp"
             android:layout_height="match_parent"
             android:background="#E0E0E0" />

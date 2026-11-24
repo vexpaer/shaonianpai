@@ -19,6 +19,24 @@ class BookDetailActivity : AppCompatActivity() {
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back_white_24dp)
         toolbar.setNavigationOnClickListener { finish() }
 
+        if (resources.configuration.screenWidthDp < 600) {
+            val container = findViewById<android.widget.LinearLayout>(R.id.bookContentContainer)
+            val coverCol = findViewById<android.widget.LinearLayout>(R.id.bookCoverColumn)
+            container.orientation = android.widget.LinearLayout.VERTICAL
+            coverCol.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            if (container.childCount > 1) {
+                val metaCol = container.getChildAt(1)
+                val d = resources.displayMetrics.density
+                metaCol.layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = (16 * d).toInt() }
+            }
+        }
+
         val firstTask = Repository.builtInFallbackTasks().first()
         findViewById<Button>(R.id.btnOpenSamplePdf).setOnClickListener {
             startActivity(Intent(this, DocumentViewActivity::class.java).putExtra("asset", firstTask.assets.first()))

@@ -21,15 +21,18 @@
         android:layout_height="match_parent">
 
         <LinearLayout
+            android:id="@+id/bookContentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="24dp">
+            android:padding="20dp">
 
             <!-- Left book cover + 4 thumbnails matching act_book_detail_pep.xml -->
             <LinearLayout
+                android:id="@+id/bookCoverColumn"
                 android:layout_width="220dp"
                 android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
                 android:orientation="vertical">
 
                 <ImageView

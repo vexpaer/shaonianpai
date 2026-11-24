@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:allowBackup="true"
@@ -12,11 +13,22 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".ui.DesktopActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
             android:exported="true"
             android:label="少年派"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,70 +40,71 @@
             android:name=".ui.LoginActivity"
             android:exported="true"
             android:label="登录"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.SelfLearnActivity"
             android:exported="true"
             android:label="自主学习"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.TaskDetailActivity"
             android:exported="true"
             android:label="任务详情"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.DocumentViewActivity"
             android:exported="true"
             android:label="文档阅读"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.VideoPlayerActivity"
+            android:configChanges="orientation|screenSize"
             android:exported="true"
             android:label="视频播放"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.ResourceLibraryActivity"
             android:exported="true"
             android:label="我的资源库"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.QuestionBookActivity"
             android:exported="true"
             android:label="试题本"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.ScheduleActivity"
             android:exported="true"
             android:label="日历"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.BookDetailActivity"
             android:exported="true"
             android:label="电子教材"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".ui.SettingsActivity"
             android:exported="true"
             android:label="设置"
-            android:screenOrientation="sensorLandscape"
+            android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
 
     </application>

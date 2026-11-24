@@ -66,9 +66,9 @@
             android:paddingBottom="20dp" />
     </LinearLayout>
 
-    <!-- Authentic 400dp end drawer matching layout_resourcestatistic.xml -->
+    <!-- Responsive end drawer matching layout_resourcestatistic.xml -->
     <LinearLayout
-        android:layout_width="360dp"
+        android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="end"
         android:background="#FFFFFFFF"

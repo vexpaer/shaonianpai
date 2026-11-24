@@ -13,6 +13,9 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login2)
 
+        findViewById<TextView>(R.id.textViewVersion).text =
+            "v${com.shaonianpai.tablet.data.UpdateManager.getCurrentVersionName(this)}"
+
         findViewById<Button>(R.id.buttonLogin).setOnClickListener {
             startActivity(Intent(this, DesktopActivity::class.java))
             finish()

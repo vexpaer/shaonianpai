@@ -39,6 +39,24 @@ class ScheduleActivity : AppCompatActivity() {
         val tvSelected = findViewById<TextView>(R.id.tvSelectedLesson)
         val lvRes = findViewById<ListView>(R.id.lvLessonResources)
 
+        if (resources.configuration.screenWidthDp < 600) {
+            val d = resources.displayMetrics.density
+            val container = findViewById<android.widget.LinearLayout>(R.id.scheduleContainer)
+            val tableScroll = findViewById<android.view.View>(R.id.scheduleTableScroll)
+            val divider = findViewById<android.view.View>(R.id.scheduleDivider)
+            val detailPanel = findViewById<android.view.View>(R.id.scheduleDetailPanel)
+            container.orientation = android.widget.LinearLayout.VERTICAL
+            tableScroll.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0, 1.35f
+            )
+            divider.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, (1 * d).toInt()
+            )
+            detailPanel.layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            )
+        }
+
         val tasks = Repository.builtInFallbackTasks()
         fun showMaterials(label: String, subject: String) {
             tvSelected.text = label

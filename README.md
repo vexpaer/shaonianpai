@@ -68,4 +68,17 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 15 | 试题本（分栏错题解析） | `activity_questionbook.xml` | ![15](screenshots/15_question_book.png) |
 | 16 | 日历 / 课程表 | `activity_scheduleview.xml` | ![16](screenshots/16_schedule.png) |
 | 17 | 人教数字教材详情 | `act_book_detail_pep.xml` | ![17](screenshots/17_book_detail.png) |
-| 18 | 系统设置 | `settings_ui.xml` | ![18](screenshots/18_settings.png) |
+| 18 | 系统设置（含 GitHub 自动检查更新） | `settings_ui.xml` | ![18](screenshots/18_settings.png) |
+
+### 竖屏手机适配基准截图（412×892dp）
+
+- 支持平板横屏与手机竖屏自由旋转；竖屏书桌顶部保留 7 件可点物品，下方提供 2 列快捷入口卡片；自主学习列表、任务详情、试题本、课程表、数字教材与设置页均已做窄屏响应式重排。
+- 设置页内置 **GitHub Releases 自动更新**（默认监听 `vexpaer/shaonianpai` 最新 Release，支持启动自动检查、手动检查、实时进度条下载与 `FileProvider` 一键调起系统安装）。
+
+| 序号 | 竖屏页面 | 截图 |
+| --- | --- | --- |
+| 19 | 竖屏书桌 + 2 列学习快捷入口 | ![19](screenshots/19_portrait_desktop.png) |
+| 20 | 竖屏自主学习 · 语文 | ![20](screenshots/20_portrait_selflearn.png) |
+| 21 | 竖屏任务详情（PDF/MP3/MP4/板书） | ![21](screenshots/21_portrait_task_detail.png) |
+| 22 | 竖屏课程表（上下分栏） | ![22](screenshots/22_portrait_schedule.png) |
+| 23 | 竖屏系统设置（GitHub 自动更新） | ![23](screenshots/23_portrait_settings_update.png) |

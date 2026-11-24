@@ -144,22 +144,26 @@ class SelfLearnActivity : AppCompatActivity() {
             }
         }
 
+        val isNarrow = resources.configuration.screenWidthDp < 600
         if (isGridMode) {
-            val glm = GridLayoutManager(this, 3)
+            val cols = if (isNarrow) 2 else 3
+            val glm = GridLayoutManager(this, cols)
             glm.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                 override fun getSpanSize(position: Int): Int =
-                    if (rows[position] is RowItem.GroupHeader) 3 else 1
+                    if (rows[position] is RowItem.GroupHeader) cols else 1
             }
             recycler.layoutManager = glm
         } else {
             recycler.layoutManager = LinearLayoutManager(this)
         }
 
-        recycler.adapter = SelfLearnAdapter(rows)
+        recycler.adapter = SelfLearnAdapter(rows, isNarrow)
     }
 
-    private inner class SelfLearnAdapter(private val rows: List<RowItem>) :
-        RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private inner class SelfLearnAdapter(
+        private val rows: List<RowItem>,
+        private val isNarrow: Boolean
+    ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         override fun getItemViewType(position: Int): Int = when (rows[position]) {
             is RowItem.GroupHeader -> 0
@@ -171,7 +175,34 @@ class SelfLearnActivity : AppCompatActivity() {
             return when (viewType) {
                 0 -> GroupVH(inf.inflate(R.layout.listitem_newlook_recyclerview_group, parent, false))
                 2 -> GridVH(inf.inflate(R.layout.layout_customselflearnitemview2_grid, parent, false))
-                else -> ListVH(inf.inflate(R.layout.layout_customselflearnitemview2_list, parent, false))
+                else -> {
+                    val v = inf.inflate(R.layout.layout_customselflearnitemview2_list, parent, false)
+                    if (isNarrow) {
+                        val d = parent.resources.displayMetrics.density
+                        v.findViewById<ImageView>(R.id.iv_thumbnail).apply {
+                            layoutParams = layoutParams.apply {
+                                width = (84 * d).toInt()
+                                height = (84 * d).toInt()
+                            }
+                            setPadding((6 * d).toInt(), (6 * d).toInt(), (6 * d).toInt(), (6 * d).toInt())
+                        }
+                        v.findViewById<View>(R.id.progress).parent?.let { p ->
+                            if (p is View) {
+                                p.layoutParams = (p.layoutParams as ViewGroup.MarginLayoutParams).apply {
+                                    width = (50 * d).toInt()
+                                    height = (50 * d).toInt()
+                                    marginEnd = (10 * d).toInt()
+                                }
+                            }
+                        }
+                        v.findViewById<View>(R.id.progress).layoutParams =
+                            v.findViewById<View>(R.id.progress).layoutParams.apply {
+                                width = (50 * d).toInt()
+                                height = (50 * d).toInt()
+                            }
+                    }
+                    ListVH(v)
+                }
             }
         }
 
