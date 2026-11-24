@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/LinearLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:background="@color/audioBarBg"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingLeft="10dp"
+    android:paddingRight="14dp">
+
+    <ImageButton
+        android:id="@+id/ImageButtonPlay"
+        style="@android:style/MediaButton.Play"
+        android:layout_width="44dp"
+        android:layout_height="44dp" />
+
+    <ImageButton
+        android:id="@+id/ImageButtonPause"
+        style="@android:style/MediaButton.Pause"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tvAudioTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="00:00 / 00:03"
+        android:textColor="#FFFFFFFF"
+        android:textSize="13sp" />
+
+    <SeekBar
+        android:id="@+id/SeekBarPosition"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:max="100" />
+</LinearLayout>

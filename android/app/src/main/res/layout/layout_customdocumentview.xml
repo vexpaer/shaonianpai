@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="170dp"
+    android:background="#FFF4F6F9"
+    android:padding="10dp">
+
+    <ImageView
+        android:id="@+id/iv_thumbnail"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_centerInParent="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_placehold_document" />
+
+    <!-- Authentic 48dp centered play circle with background_play_icon -->
+    <ImageView
+        android:id="@+id/iv_openicon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/background_play_icon"
+        android:padding="8dp"
+        android:src="@drawable/ic_play_arrow_white_24dp" />
+
+    <TextView
+        android:id="@+id/tvDocHint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:background="#AA1976D2"
+        android:paddingLeft="10dp"
+        android:paddingTop="4dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="4dp"
+        android:text="点击全屏阅读 PDF"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp" />
+</RelativeLayout>

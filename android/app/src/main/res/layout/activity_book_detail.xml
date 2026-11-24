@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFFFF"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/pepMain"
+        android:elevation="4dp"
+        android:theme="@style/ToolbarTheme"
+        app:title="人教数字教材 · 详情"
+        app:titleTextColor="#FFFFFF" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="24dp">
+
+            <!-- Left book cover + 4 thumbnails matching act_book_detail_pep.xml -->
+            <LinearLayout
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/book_show"
+                    android:layout_width="205dp"
+                    android:layout_height="265dp"
+                    android:background="#E8F5E9"
+                    android:elevation="3dp"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_cardview_placehold_1" />
+
+                <LinearLayout
+                    android:layout_width="205dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="58dp"
+                        android:layout_marginEnd="4dp"
+                        android:background="#ECEFF1"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_pdf" />
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="58dp"
+                        android:layout_marginEnd="4dp"
+                        android:background="#ECEFF1"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_audio" />
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="58dp"
+                        android:layout_marginEnd="4dp"
+                        android:background="#ECEFF1"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_video" />
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="58dp"
+                        android:background="#ECEFF1"
+                        android:padding="6dp"
+                        android:src="@drawable/ic_picture" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Right metadata column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="28dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/book_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="义务教育教科书 · 语文（九年级上册）"
+                    android:textColor="#000000"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/separateLine" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="编著：教育部组织编写" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="版次：2018年7月第1版" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="丛书：统编义务教育教科书" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="课本大小：64.8 MB" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="出版社：人民教育出版社" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="开本：787mm × 1092mm 16开" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="ISBN：978-7-107-32802-2" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:text="配套资源：48 个（音频/视频/讲义）" android:textColor="@color/textSecondary" android:textSize="14sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="16dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnOpenSamplePdf"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:backgroundTint="@color/pepMain"
+                        android:text="打开第三单元电子讲义"
+                        android:textColor="#FFFFFF" />
+
+                    <Button
+                        android:id="@+id/btnPlaySampleAudio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:layout_marginStart="12dp"
+                        android:backgroundTint="@color/primaryColor"
+                        android:text="试听课文朗读"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="12dp"
+                    android:background="@color/separateLine" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="内容介绍"
+                    android:textColor="#000000"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingMultiplier="1.35"
+                    android:text="本册收录现代诗歌、议论文、古诗文经典（《岳阳楼记》《醉翁亭记》《湖心亭看雪》）、中外小说等六个单元。配套名家课文范读音频、重点文言字词解析及同步课后练习，支持在平板端离线翻页阅读与批注。"
+                    android:textColor="@color/textSecondary"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

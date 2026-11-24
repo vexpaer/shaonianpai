@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/primaryColor"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:paddingTop="30dp"
+    android:paddingBottom="20dp">
+
+    <ImageView
+        android:id="@+id/iv_thumbnail"
+        android:layout_width="110dp"
+        android:layout_height="110dp"
+        android:layout_marginBottom="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/no_pic" />
+
+    <TextView
+        android:id="@+id/textViewStudentName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="张三（九年级 3 班）"
+        android:textAppearance="?android:textAppearanceMedium"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textViewServerInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center"
+        android:text="本地服务器 10.0.2.2:8765"
+        android:textColor="#DDFFFFFF"
+        android:textSize="13sp" />
+</LinearLayout>

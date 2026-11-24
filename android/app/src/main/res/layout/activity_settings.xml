@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFFFF"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/primaryColor"
+        android:elevation="4dp"
+        android:theme="@style/ToolbarTheme"
+        app:title="系统设置"
+        app:titleTextColor="#FFFFFF" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="桌面图标"
+                android:textColor="@color/primaryColor"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <Switch
+                android:id="@+id/swLockIcons"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:checked="false"
+                android:text="锁定桌面图标（选中后不能随意移动桌面图标）"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/btnResetPositions"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginTop="6dp"
+                android:backgroundTint="@color/primaryColor"
+                android:text="还原默认图标位置"
+                android:textColor="#FFFFFF" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="18dp"
+                android:layout_marginBottom="18dp"
+                android:background="@color/separateLine" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="主题与服务器"
+                android:textColor="@color/primaryColor"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="界面主题：默认主题（深海蓝 #1976D2） / 天空蓝 / 梦幻紫"
+                android:textColor="@color/textSecondary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="教师资料服务地址"
+                android:textColor="@color/textPrimary"
+                android:textSize="15sp" />
+
+            <EditText
+                android:id="@+id/etServerUrl"
+                android:layout_width="420dp"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:hint="http://10.0.2.2:8765"
+                android:text="http://10.0.2.2:8765" />
+
+            <Button
+                android:id="@+id/btnSaveServer"
+                android:layout_width="wrap_content"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="@color/primaryColor"
+                android:text="保存并测试连接"
+                android:textColor="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/tvConnectionStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="状态：已连接本地模拟后端（5 个学习任务，9 份测试附件）"
+                android:textColor="#2E7D32"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

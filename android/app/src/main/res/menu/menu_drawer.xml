@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/buttonNetworkCheck"
+            android:icon="@drawable/ic_signal_cellular_connected_no_internet_1_bar_black_36dp"
+            android:title="网络检查" />
+        <item
+            android:id="@+id/buttonGoOffline"
+            android:icon="@drawable/ic_sd_storage_black_36dp"
+            android:title="离线学习数据" />
+        <item
+            android:id="@+id/buttonSynchronizeNow"
+            android:icon="@drawable/ic_sync_black_36dp"
+            android:title="立即同步" />
+        <item
+            android:id="@+id/buttonSettings"
+            android:icon="@drawable/ic_configure"
+            android:title="设置..." />
+        <item
+            android:id="@+id/buttonLogout"
+            android:icon="@drawable/ic_exit_to_app_black_36dp"
+            android:title="登出" />
+    </group>
+    <item android:title="功能">
+        <menu>
+            <item android:id="@+id/nav_selflearn" android:icon="@drawable/ic_ruiyicloud_selflearn" android:title="自主学习" />
+            <item android:id="@+id/nav_library" android:icon="@drawable/ic_folder" android:title="我的资源库" />
+            <item android:id="@+id/nav_questionbook" android:icon="@drawable/ic_ruiyicloud_homework" android:title="试题本" />
+            <item android:id="@+id/nav_schedule" android:icon="@drawable/ic_desktop_schedule" android:title="日历 / 课程表" />
+            <item android:id="@+id/nav_bookdetail" android:icon="@drawable/ic_pdf" android:title="电子教材详情" />
+        </menu>
+    </item>
+</menu>

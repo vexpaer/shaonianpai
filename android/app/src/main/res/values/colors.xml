@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Authentic colors from shaonianpai 5.2.3.52408 -->
+    <color name="primaryColor">#FF1976D2</color>
+    <color name="primaryDarkColor">#FF004BA0</color>
+    <color name="primaryLightColor">#FF63A4FF</color>
+    <color name="primaryTextColor">#FFFFFFFF</color>
+
+    <color name="themeBluePrimary">#FF00BCD4</color>
+    <color name="themeBlueDark">#FF00A0B4</color>
+    <color name="themePurplePrimary">#FF9C27B0</color>
+    <color name="themePurpleDark">#FF821B94</color>
+
+    <color name="colorPrimary">#FF3F51B5</color>
+    <color name="colorPrimaryDark">#FF303F9F</color>
+    <color name="cpb_track">#603F51B5</color>
+    <color name="cpb_progress">#FF3F51B5</color>
+
+    <color name="drawerTopBg">#FFECECEC</color>
+    <color name="separateLine">#FFE8E8E8</color>
+    <color name="groupLine">#FFE0E0E0</color>
+    <color name="groupExpandBlue">#FF0789CC</color>
+    <color name="textPrimary">#FF212121</color>
+    <color name="textSecondary">#FF666666</color>
+    <color name="pepMain">#FF00897B</color>
+    <color name="audioBarBg">#BB000000</color>
+</resources>

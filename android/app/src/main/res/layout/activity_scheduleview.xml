@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFFFF"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@color/primaryColor"
+        android:elevation="4dp"
+        android:theme="@style/ToolbarTheme"
+        app:title="日历 · 课程表（2021年第5周）"
+        app:titleTextColor="#FFFFFF" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+
+        <!-- Weekly timetable grid -->
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2.2"
+            android:padding="12dp">
+
+            <TableLayout
+                android:id="@+id/tableSchedule"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:stretchColumns="1,2,3,4,5" />
+        </ScrollView>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/separateLine" />
+
+        <!-- Right panel: Selected day's lesson materials -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#FAFAFA"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/tvSelectedLesson"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="周四 · 第2节 语文"
+                android:textColor="@color/primaryColor"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="10dp"
+                android:text="关联课堂资料与自主学习任务"
+                android:textColor="@color/textSecondary"
+                android:textSize="13sp" />
+
+            <ListView
+                android:id="@+id/lvLessonResources"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@color/separateLine"
+                android:dividerHeight="1dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

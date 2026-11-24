@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_search"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="搜索"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_source"
+        android:title="来源"
+        app:showAsAction="always|withText">
+        <menu>
+            <item android:id="@+id/src_all" android:title="全部来源" />
+            <item android:id="@+id/src_school" android:title="本校资源" />
+            <item android:id="@+id/src_cloud" android:title="睿易云" />
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_display"
+        android:title="显示设置"
+        app:showAsAction="always|withText">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/action_listmode" android:checked="true" android:title="列表显示" />
+                <item android:id="@+id/action_gridmode" android:title="网格显示" />
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_group"
+        android:title="分组设置"
+        app:showAsAction="always|withText">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/action_group_date" android:checked="true" android:title="日期分组" />
+                <item android:id="@+id/action_group_type" android:title="类型分组" />
+                <item android:id="@+id/action_group_state" android:title="状态分组" />
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_time"
+        android:title="时间设置"
+        app:showAsAction="always|withText">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/action_last_week" android:title="最近一星期" />
+                <item android:id="@+id/action_last_month" android:title="最近一月" />
+                <item android:id="@+id/action_last_4month" android:title="最近四个月" />
+                <item android:id="@+id/action_last_year" android:title="最近一年" />
+                <item android:id="@+id/action_all" android:checked="true" android:title="全部" />
+            </group>
+        </menu>
+    </item>
+</menu>

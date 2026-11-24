@@ -1,0 +1,17 @@
+# Gradle & Android
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/*.iml
+android/.idea/
+
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+backend/shaonianpai.sqlite3
+backend/media/
+
+# OS
+.DS_Store
