@@ -255,17 +255,26 @@ class PdfAnnotCanvasView @JvmOverloads constructor(
         )
     }
 
+    private val pageOutlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = Color.parseColor("#FFDDE2E8")
+        strokeWidth = 1.5f
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        canvas.drawColor(if (nightMode) Color.parseColor("#212139") else Color.parseColor("#E1E1E1"))
+        canvas.drawColor(if (nightMode) Color.parseColor("#212139") else Color.WHITE)
         val bmp = pageBitmap ?: return
         computePageRect()
 
-        // Page card shadow
+        // Page card shadow + subtle hairline outline inside white Foxit frame
         if (!nightMode) {
             canvas.drawRect(pageRect, shadowPaint)
         }
         canvas.drawBitmap(bmp, null, pageRect, if (nightMode) nightPaint else pagePaint)
+        if (!nightMode) {
+            canvas.drawRect(pageRect, pageOutlinePaint)
+        }
 
         // Draw search match highlights
         if (searchHighlightRects.isNotEmpty()) {

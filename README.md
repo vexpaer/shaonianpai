@@ -135,3 +135,17 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 37 | 任务详情页 · 内嵌多页 PDF 阅读器 + 全屏批注 | `activity_resourcesview2.xml` + `layout_customdocumentview.xml` | ![37](screenshots/37_task_detail_inline_pdf.png) |
 | 38 | 精修福昕 PDF 阅读器（48dp 顶栏 / 左下页码胶囊 / 铅笔荧光笔） | `rd_main_frame.xml` + `rd_gotopage_close.xml` | ![38](screenshots/38_pdf_foxit_refined_reading.png) |
 
+### 原版两段式 PDF 展开、浅底音频条、视频封面帧与白框福昕阅读页（`v0.1.5`）
+
+- **原版两段式 PDF 卡片**（`layout_customdocumentview.xml`）：任务详情初始状态显示原版文档占位图（`ic_placehold_document.png`）与居中圆形播放/加载钮；点击后加载并原地展开内嵌多页 PDF 预览（带左右悬浮 `<` / `>` 翻页箭头与右上角蓝框 `↗↙` 放大钮）；点击右上角放大钮进入独立福昕 PDF 阅读/批注页。
+- **独立福昕 PDF 白框主题**（`rd_main_frame.xml` + `ux_bg_color_toolbar_light`）：阅读态默认采用原版纯白画布边框（`#FFFFFF`）与浅白顶栏（`#FAFAFA` + 1dp 细灰分割线）+ 底部工具栏；点击「批注 / 铅笔 / 荧光笔」进入编辑态时自动切换为福昕天蓝顶栏（`#179CD8`）。
+- **浅底音频播放条**：移除任务详情音频条的深色背景框，改为干净通透的浅底播放栏。
+- **真实视频封面帧预览**：通过 `MediaMetadataRetriever` 异步提取 MP4 封面帧与真实时长，铺满视频卡片并叠加居中圆形播放按钮。
+
+| 序号 | 页面 | 对应原包布局 | 截图 |
+| --- | --- | --- | --- |
+| 39 | 任务详情初始态（PDF 占位钮 + 浅底音频条 + 视频封面帧） | `layout_customdocumentview.xml` + `layout_customaudioview.xml` | ![39](screenshots/39_task_detail_collapsed_audio_video.png) |
+| 40 | 任务详情 PDF 展开态（左右箭头 + 右上角蓝框 `↗↙` 放大钮） | `layout_customdocumentview.xml` (`fl_pdfcontent` + `iv_fullscreen`) | ![40](screenshots/40_task_detail_pdf_expanded_inline.png) |
+| 41 | 独立福昕 PDF 阅读页（白色边框 + 浅白顶栏 + 底栏按钮） | `rd_main_frame.xml` | ![41](screenshots/41_pdf_foxit_white_frame.png) |
+
+

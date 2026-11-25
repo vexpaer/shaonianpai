@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.pdf.PdfRenderer
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -26,6 +27,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.SeekBar
@@ -79,6 +81,8 @@ class TaskDetailActivity : AppCompatActivity() {
     private var activeFilterIndex = 0 // 0=all, 1=pdf, 2=audio/video, 3=image, 4=quiz
     private val selectedQuizAnswers = mutableMapOf<String, Int>()
     private val inlinePdfPages = mutableMapOf<String, Int>()
+    private val expandedPdfAssets = mutableSetOf<String>()
+    private val videoCoverCache = mutableMapOf<String, Pair<Bitmap, String>>()
 
     private var activeMediaPlayer: MediaPlayer? = null
     private var activeAudioAssetId: String? = null
@@ -96,6 +100,9 @@ class TaskDetailActivity : AppCompatActivity() {
             ?: Repository.builtInFallbackTasks().first()
         compactMode = intent.getBooleanExtra("compact_mode", false)
         autoPlayAudio = intent.getBooleanExtra("auto_play_audio", false)
+        if (intent.getBooleanExtra("demo_expand_pdf", false)) {
+            task.assets.firstOrNull { it.mime.contains("pdf") }?.let { expandedPdfAssets.add(it.assetId) }
+        }
 
         quizzes = buildQuizzesForTask(task)
 
@@ -535,6 +542,45 @@ class TaskDetailActivity : AppCompatActivity() {
                 }
                 asset.mime.contains("video") -> {
                     val v = inf.inflate(R.layout.layout_customvideoplayerwrapper, vh.flContent, false)
+                    val ivThumb = v.findViewById<ImageView>(R.id.iv_thumbnail)
+                    val tvDur = v.findViewById<TextView>(R.id.tvVideoDuration)
+                    val cached = videoCoverCache[asset.assetId]
+                    if (cached != null) {
+                        ivThumb.scaleType = ImageView.ScaleType.CENTER_CROP
+                        ivThumb.setImageBitmap(cached.first)
+                        tvDur.text = cached.second
+                    } else {
+                        Thread {
+                            val file = Repository.resolveAssetFileSync(this@TaskDetailActivity, asset) ?: return@Thread
+                            var frame: Bitmap? = null
+                            var durLabel = "MP4 · 点击全屏播放"
+                            val mmr = MediaMetadataRetriever()
+                            try {
+                                mmr.setDataSource(file.absolutePath)
+                                val durMs = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toIntOrNull() ?: 0
+                                if (durMs > 0) {
+                                    durLabel = "MP4 · ${formatMs(durMs)} · 点击全屏播放"
+                                }
+                                frame = mmr.getFrameAtTime(
+                                    (durMs.coerceAtLeast(1000) / 3L) * 1000L,
+                                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                                ) ?: mmr.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                            } catch (_: Exception) {
+                            } finally {
+                                runCatching { mmr.release() }
+                            }
+                            if (frame != null) {
+                                val bmp = frame
+                                videoCoverCache[asset.assetId] = bmp to durLabel
+                                runOnUiThread {
+                                    if (isFinishing || isDestroyed) return@runOnUiThread
+                                    ivThumb.scaleType = ImageView.ScaleType.CENTER_CROP
+                                    ivThumb.setImageBitmap(bmp)
+                                    tvDur.text = durLabel
+                                }
+                            }
+                        }.start()
+                    }
                     v.setOnClickListener { openAssetFullscreen(asset) }
                     v.findViewById<ImageView>(R.id.iv_playicon).setOnClickListener { openAssetFullscreen(asset) }
                     vh.flContent.addView(v)
@@ -567,84 +613,141 @@ class TaskDetailActivity : AppCompatActivity() {
         }
 
         /**
-         * Recreates original layout_customdocumentview.xml:
-         * Full-width embedded multi-page PDF reader right inside TaskDetailActivity,
-         * with floating top-right 「全屏批注」 button (iv_fullscreen) and inline page switcher!
+         * Faithfully recreates original layout_customdocumentview.xml (2-stage PDF flow):
+         * Stage 1 (initial): Centered 150dp ic_placehold_document.png + 48dp circular play/start button.
+         * Stage 2 (after tap): Downloads/loads inline PDF preview (fl_pdfcontent) with overlaid
+         * left/right `<` `>` page flip arrows and top-right blue-bordered diagonal expand icon
+         * (iv_fullscreen) that opens the dedicated Foxit PDF reader/annotator Activity.
          */
         private fun bindInlinePdfViewer(container: FrameLayout, asset: AssetItem) {
             val d = resources.displayMetrics.density
             fun dp(v: Int) = (v * d).toInt()
             val isNarrow = resources.configuration.screenWidthDp < 560
-            val viewerHeight = if (isNarrow) dp(340) else dp(440)
+            val expandedHeight = if (isNarrow) dp(360) else dp(460)
 
-            val wrapper = FrameLayout(this@TaskDetailActivity).apply {
-                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewerHeight)
-                setBackgroundColor(Color.parseColor("#E5E8EC"))
+            val root = FrameLayout(this@TaskDetailActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            // ===== Stage 1: Collapsed document placeholder + center play/download icon =====
+            val placeholderBox = FrameLayout(this@TaskDetailActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(184))
+                setBackgroundColor(Color.TRANSPARENT)
+            }
+            val ivDocPlaceholder = ImageView(this@TaskDetailActivity).apply {
+                setImageResource(R.drawable.ic_placehold_document)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = FrameLayout.LayoutParams(dp(150), dp(150)).apply {
+                    gravity = Gravity.CENTER
+                }
+            }
+            val ivOpenIcon = ImageView(this@TaskDetailActivity).apply {
+                setBackgroundResource(R.drawable.background_play_icon)
+                setImageResource(R.drawable.ic_play_arrow_white_24dp)
+                setPadding(dp(10), dp(10), dp(10), dp(10))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = FrameLayout.LayoutParams(dp(50), dp(50)).apply {
+                    gravity = Gravity.CENTER
+                }
+            }
+            val pbLoading = ProgressBar(this@TaskDetailActivity).apply {
+                visibility = View.GONE
+                layoutParams = FrameLayout.LayoutParams(dp(44), dp(44)).apply {
+                    gravity = Gravity.CENTER
+                }
+            }
+            placeholderBox.addView(ivDocPlaceholder)
+            placeholderBox.addView(ivOpenIcon)
+            placeholderBox.addView(pbLoading)
+
+            // ===== Stage 2: Expanded inline PDF preview (fl_pdfcontent + overlay arrows + iv_fullscreen) =====
+            val expandedBox = FrameLayout(this@TaskDetailActivity).apply {
+                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, expandedHeight)
+                setBackgroundColor(Color.parseColor("#E6E6E6"))
+                visibility = View.GONE
             }
 
             val ivPage = ImageView(this@TaskDetailActivity).apply {
-                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT).apply {
-                    setMargins(dp(6), dp(6), dp(6), dp(42))
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                ).apply {
+                    setMargins(dp(4), dp(4), dp(4), dp(4))
                 }
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setBackgroundColor(Color.WHITE)
             }
 
-            // Floating top-right Fullscreen Annotate button (matching iv_fullscreen in layout_customdocumentview.xml)
-            val btnFullscreen = TextView(this@TaskDetailActivity).apply {
-                text = "⛶ 全屏批注"
-                textSize = 12f
-                setTextColor(Color.WHITE)
-                setTypeface(null, Typeface.BOLD)
-                setPadding(dp(12), dp(6), dp(12), dp(6))
-                background = GradientDrawable().apply {
-                    setColor(Color.parseColor("#DD179CD8"))
-                    cornerRadius = dp(16).toFloat()
+            // Left / Right translucent page-flip chevrons overlaid directly on the inline PDF (matching original)
+            val btnPrev = ImageView(this@TaskDetailActivity).apply {
+                setImageResource(R.drawable.fx_page_prev)
+                alpha = 0.85f
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = FrameLayout.LayoutParams(dp(48), dp(48)).apply {
+                    gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    marginStart = dp(10)
                 }
-                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            }
+            val btnNext = ImageView(this@TaskDetailActivity).apply {
+                setImageResource(R.drawable.fx_page_next)
+                alpha = 0.85f
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = FrameLayout.LayoutParams(dp(48), dp(48)).apply {
+                    gravity = Gravity.END or Gravity.CENTER_VERTICAL
+                    marginEnd = dp(10)
+                }
+            }
+
+            // Top-right blue-bordered translucent square expand button (iv_fullscreen in layout_customdocumentview.xml)
+            val btnFullscreen = ImageView(this@TaskDetailActivity).apply {
+                setBackgroundResource(R.drawable.bg_pdf_fullscreen_btn)
+                setImageResource(R.drawable.ic_pdf_expand_diagonal)
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                contentDescription = "全屏打开福昕批注"
+                layoutParams = FrameLayout.LayoutParams(dp(42), dp(42)).apply {
                     gravity = Gravity.TOP or Gravity.END
-                    setMargins(0, dp(12), dp(12), 0)
+                    setMargins(0, dp(14), dp(14), 0)
                 }
             }
 
-            // Bottom inline page flip bar
-            val navBar = LinearLayout(this@TaskDetailActivity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER
-                setBackgroundColor(Color.parseColor("#F7F9FC"))
-                layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(38)).apply {
-                    gravity = Gravity.BOTTOM
+            // Compact translucent page indicator pill at bottom-center
+            val tvPagePill = TextView(this@TaskDetailActivity).apply {
+                text = "1 / 1"
+                textSize = 12f
+                setTextColor(Color.parseColor("#333333"))
+                setPadding(dp(12), dp(3), dp(12), dp(3))
+                background = GradientDrawable().apply {
+                    setColor(Color.parseColor("#DDFFFFFF"))
+                    setStroke(dp(1), Color.parseColor("#D0D0D0"))
+                    cornerRadius = dp(12).toFloat()
+                }
+                layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                    bottomMargin = dp(10)
                 }
             }
-            val btnPrev = TextView(this@TaskDetailActivity).apply {
-                text = "◀ 上一页"
-                textSize = 12.5f
-                setTextColor(Color.parseColor("#1976D2"))
-                setPadding(dp(14), dp(6), dp(14), dp(6))
-            }
-            val tvPageNum = TextView(this@TaskDetailActivity).apply {
-                text = "加载中..."
-                textSize = 12.5f
-                setTextColor(Color.parseColor("#424242"))
-                setPadding(dp(12), dp(4), dp(12), dp(4))
-            }
-            val btnNext = TextView(this@TaskDetailActivity).apply {
-                text = "下一页 ▶"
-                textSize = 12.5f
-                setTextColor(Color.parseColor("#1976D2"))
-                setPadding(dp(14), dp(6), dp(14), dp(6))
-            }
-            navBar.addView(btnPrev)
-            navBar.addView(tvPageNum)
-            navBar.addView(btnNext)
 
-            wrapper.addView(ivPage)
-            wrapper.addView(btnFullscreen)
-            wrapper.addView(navBar)
-            container.addView(wrapper)
+            expandedBox.addView(ivPage)
+            expandedBox.addView(btnPrev)
+            expandedBox.addView(btnNext)
+            expandedBox.addView(btnFullscreen)
+            expandedBox.addView(tvPagePill)
+
+            root.addView(placeholderBox)
+            root.addView(expandedBox)
+            container.addView(root)
 
             var totalPages = 1
-            fun renderInline(targetPage: Int) {
+            fun renderInline(targetPage: Int, onReady: (() -> Unit)? = null) {
                 Thread {
                     val file = Repository.resolveAssetFileSync(this@TaskDetailActivity, asset) ?: return@Thread
                     var bmp: Bitmap? = null
@@ -656,8 +759,8 @@ class TaskDetailActivity : AppCompatActivity() {
                                 actualPage = targetPage.coerceIn(0, totalPages - 1)
                                 inlinePdfPages[asset.assetId] = actualPage
                                 r.openPage(actualPage).use { p ->
-                                    val w = 900
-                                    val h = (w.toFloat() * p.height / p.width.coerceAtLeast(1)).toInt().coerceAtLeast(400)
+                                    val w = 960
+                                    val h = (w.toFloat() * p.height / p.width.coerceAtLeast(1)).toInt().coerceAtLeast(420)
                                     val b = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
                                     b.eraseColor(Color.WHITE)
                                     p.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -670,13 +773,38 @@ class TaskDetailActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (isFinishing || isDestroyed) return@runOnUiThread
                         bmp?.let { ivPage.setImageBitmap(it) }
-                        tvPageNum.text = "第 ${actualPage + 1} / $totalPages 页"
+                        tvPagePill.text = "${actualPage + 1} / $totalPages"
+                        btnPrev.visibility = if (actualPage > 0) View.VISIBLE else View.INVISIBLE
+                        btnNext.visibility = if (actualPage < totalPages - 1) View.VISIBLE else View.INVISIBLE
+                        onReady?.invoke()
                     }
                 }.start()
             }
 
-            val initPage = inlinePdfPages[asset.assetId] ?: Repository.getSavedPdfPage(this@TaskDetailActivity, asset.assetId)
-            renderInline(initPage)
+            fun openInlinePreview() {
+                expandedPdfAssets.add(asset.assetId)
+                ivOpenIcon.visibility = View.GONE
+                pbLoading.visibility = View.VISIBLE
+                val initPage = inlinePdfPages[asset.assetId] ?: Repository.getSavedPdfPage(this@TaskDetailActivity, asset.assetId)
+                renderInline(initPage) {
+                    placeholderBox.visibility = View.GONE
+                    pbLoading.visibility = View.GONE
+                    ivOpenIcon.visibility = View.VISIBLE
+                    expandedBox.visibility = View.VISIBLE
+                }
+            }
+
+            if (expandedPdfAssets.contains(asset.assetId)) {
+                placeholderBox.visibility = View.GONE
+                expandedBox.visibility = View.VISIBLE
+                val initPage = inlinePdfPages[asset.assetId] ?: Repository.getSavedPdfPage(this@TaskDetailActivity, asset.assetId)
+                renderInline(initPage)
+            }
+
+            val startClick = View.OnClickListener { openInlinePreview() }
+            placeholderBox.setOnClickListener(startClick)
+            ivDocPlaceholder.setOnClickListener(startClick)
+            ivOpenIcon.setOnClickListener(startClick)
 
             btnPrev.setOnClickListener {
                 val cur = inlinePdfPages[asset.assetId] ?: 0
@@ -686,11 +814,9 @@ class TaskDetailActivity : AppCompatActivity() {
                 val cur = inlinePdfPages[asset.assetId] ?: 0
                 if (cur < totalPages - 1) renderInline(cur + 1)
             }
-            val openFull = View.OnClickListener {
+            btnFullscreen.setOnClickListener {
                 openAssetFullscreen(asset, inlinePdfPages[asset.assetId] ?: 0)
             }
-            btnFullscreen.setOnClickListener(openFull)
-            ivPage.setOnClickListener(openFull)
         }
     }
 

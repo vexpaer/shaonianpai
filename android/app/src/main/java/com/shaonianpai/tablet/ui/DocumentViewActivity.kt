@@ -1077,6 +1077,7 @@ class DocumentViewActivity : AppCompatActivity() {
         hideAllPopupSheets()
         mainBottomBar.visibility = View.GONE
         annotBottomBar.visibility = View.VISIBLE
+        updateTopBarAppearance()
         selectAnnotTool(initialTool)
     }
 
@@ -1087,6 +1088,35 @@ class DocumentViewActivity : AppCompatActivity() {
         annotBottomBar.visibility = View.GONE
         toolPromptBar.visibility = View.GONE
         mainBottomBar.visibility = View.VISIBLE
+        updateTopBarAppearance()
+    }
+
+    private fun updateTopBarAppearance() {
+        val topBar = findViewById<View>(R.id.pdfTopBar)
+        val btnBack = findViewById<ImageButton>(R.id.btnPdfBack)
+        val btnSearch = findViewById<ImageButton>(R.id.btnSearchToggle)
+        val btnExport = findViewById<TextView>(R.id.btnExportPdf)
+        val btnMore = findViewById<TextView>(R.id.btnOpenExternal)
+        if (annotMode) {
+            topBar.setBackgroundColor(Color.parseColor("#FF179CD8"))
+            btnBack.setColorFilter(Color.WHITE)
+            tvPdfTitle.setTextColor(Color.WHITE)
+            tvPdfSubtitle.setBackgroundColor(Color.parseColor("#26000000"))
+            tvPdfSubtitle.setTextColor(Color.parseColor("#EEFFFFFF"))
+            btnSearch.setColorFilter(Color.WHITE)
+            btnExport.setTextColor(Color.WHITE)
+            btnMore.setTextColor(Color.WHITE)
+        } else {
+            topBar.setBackgroundColor(Color.parseColor("#FFFAFAFA"))
+            btnBack.setColorFilter(Color.parseColor("#FF333333"))
+            tvPdfTitle.setTextColor(Color.parseColor("#FF212121"))
+            tvPdfSubtitle.setBackgroundColor(Color.parseColor("#FFE6F4FC"))
+            tvPdfSubtitle.setTextColor(Color.parseColor("#FF179CD8"))
+            btnSearch.setColorFilter(Color.parseColor("#FF424242"))
+            btnExport.setTextColor(Color.parseColor("#FF179CD8"))
+            btnMore.setTextColor(Color.parseColor("#FF424242"))
+        }
+        updateBookmarkIcon()
     }
 
     private fun selectAnnotTool(tool: AnnotTool) {
@@ -1205,7 +1235,13 @@ class DocumentViewActivity : AppCompatActivity() {
     private fun updateBookmarkIcon() {
         val marked = docState.bookmarks.any { it.pageIndex == currentPage }
         btnBookmarkToggle.setImageResource(if (marked) R.drawable.fx_bookmark_selected else R.drawable.fx_bookmark)
-        btnBookmarkToggle.setColorFilter(if (marked) Color.parseColor("#FFEB3B") else Color.WHITE)
+        val tint = when {
+            marked && annotMode -> Color.parseColor("#FFEB3B")
+            marked -> Color.parseColor("#FFF5A623")
+            annotMode -> Color.WHITE
+            else -> Color.parseColor("#FF424242")
+        }
+        btnBookmarkToggle.setColorFilter(tint)
     }
 
     private fun showNoteOrTextDialog(annot: PdfAnnotation, isNew: Boolean) {

@@ -4,13 +4,14 @@
     android:id="@+id/pdfDrawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFE1E1E1">
+    android:background="#FFFFFFFF">
 
-    <!-- Main Foxit Reader Frame (rd_main_frame.xml faithful structure) -->
+    <!-- Main Foxit Reader Frame (rd_main_frame.xml faithful white-border structure) -->
     <RelativeLayout
         android:id="@+id/pdfMainRoot"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="#FFFFFFFF">
 
         <!-- Interactive PDF + Vector Annotation Canvas -->
         <com.shaonianpai.tablet.pdf.PdfAnnotCanvasView
@@ -47,19 +48,20 @@
             android:scaleType="fitCenter"
             android:src="@drawable/fx_page_next" />
 
-        <!-- Top Bar Container (#179CD8 Foxit Sky Blue, clean single-line 48dp matching original) -->
+        <!-- Top Bar Container (original Foxit light white #FAFAFA bar in reading mode, switches to #179CD8 in annot mode) -->
         <LinearLayout
             android:id="@+id/pdfTopBarContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
-            android:elevation="4dp"
+            android:elevation="2dp"
             android:orientation="vertical">
 
             <LinearLayout
+                android:id="@+id/pdfTopBar"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:background="#FF179CD8"
+                android:background="#FFFAFAFA"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="6dp">
@@ -70,7 +72,8 @@
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="返回"
-                    android:src="@drawable/ic_arrow_back_white_24dp" />
+                    android:src="@drawable/ic_arrow_back_white_24dp"
+                    app:tint="#FF333333" />
 
                 <TextView
                     android:id="@+id/tvPdfTitle"
@@ -81,7 +84,7 @@
                     android:ellipsize="end"
                     android:singleLine="true"
                     android:text="PDF 阅读与批注"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#FF212121"
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
@@ -90,12 +93,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="4dp"
-                    android:background="#26000000"
-                    android:paddingHorizontal="7dp"
+                    android:background="#FFE6F4FC"
+                    android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
                     android:text="0注"
-                    android:textColor="#EEFFFFFF"
-                    android:textSize="11sp" />
+                    android:textColor="#FF179CD8"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
 
                 <ImageButton
                     android:id="@+id/btnBookmarkToggle"
@@ -116,7 +120,7 @@
                     android:padding="7dp"
                     android:scaleType="fitCenter"
                     android:src="@android:drawable/ic_menu_search"
-                    app:tint="#FFFFFFFF" />
+                    app:tint="#FF424242" />
 
                 <TextView
                     android:id="@+id/btnExportPdf"
@@ -126,7 +130,7 @@
                     android:gravity="center"
                     android:paddingHorizontal="8dp"
                     android:text="导出"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#FF179CD8"
                     android:textSize="13sp"
                     android:textStyle="bold" />
 
@@ -137,16 +141,21 @@
                     android:background="?attr/selectableItemBackground"
                     android:gravity="center"
                     android:text="⋮"
-                    android:textColor="#FFFFFFFF"
+                    android:textColor="#FF424242"
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#FFD4D4D4" />
 
             <ProgressBar
                 android:id="@+id/progressBar1"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
-                android:layout_height="3dp"
+                android:layout_height="2dp"
                 android:max="10000"
                 android:progress="0"
                 android:progressDrawable="@drawable/green_progressbar" />

@@ -2,28 +2,36 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/RelativeLayout1"
     android:layout_width="match_parent"
-    android:layout_height="190dp"
-    android:background="#FF1A1F24">
+    android:layout_height="220dp"
+    android:background="#FF141920">
 
+    <!-- Real extracted video cover frame (falls back to ic_multimedia while loading) -->
     <ImageView
         android:id="@+id/iv_thumbnail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp"
-        android:scaleType="fitCenter"
+        android:scaleType="centerCrop"
         android:src="@drawable/ic_multimedia" />
 
-    <!-- Authentic 80dp centered circular play button -->
+    <!-- Subtle bottom scrim for duration badge readability -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_alignParentBottom="true"
+        android:background="#44000000" />
+
+    <!-- Authentic centered circular play button (background_play_icon) -->
     <ImageView
         android:id="@+id/iv_playicon"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
         android:layout_centerInParent="true"
         android:background="@drawable/background_play_icon"
-        android:padding="16dp"
+        android:padding="15dp"
         android:src="@drawable/ic_play_arrow_white_24dp" />
 
     <TextView
+        android:id="@+id/tvVideoDuration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
@@ -34,7 +42,7 @@
         android:paddingTop="4dp"
         android:paddingRight="10dp"
         android:paddingBottom="4dp"
-        android:text="MP4 · 00:04 · 点击全屏播放"
+        android:text="MP4 · 点击全屏播放"
         android:textColor="#FFFFFF"
         android:textSize="12sp" />
 </RelativeLayout>

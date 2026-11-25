@@ -2,33 +2,41 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/LinearLayout1"
     android:layout_width="match_parent"
-    android:layout_height="56dp"
-    android:background="@color/audioBarBg"
+    android:layout_height="52dp"
+    android:background="@android:color/transparent"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingLeft="10dp"
-    android:paddingRight="14dp">
+    android:paddingLeft="4dp"
+    android:paddingRight="10dp">
 
     <ImageButton
         android:id="@+id/ImageButtonPlay"
-        style="@android:style/MediaButton.Play"
-        android:layout_width="44dp"
-        android:layout_height="44dp" />
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="播放"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_audio_play_lightbar" />
 
     <ImageButton
         android:id="@+id/ImageButtonPause"
-        style="@android:style/MediaButton.Pause"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="暂停"
+        android:padding="6dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_audio_pause_lightbar"
         android:visibility="gone" />
 
     <TextView
         android:id="@+id/tvAudioTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="6dp"
         android:text="00:00 / 00:03"
-        android:textColor="#FFFFFFFF"
+        android:textColor="#FF424242"
         android:textSize="13sp" />
 
     <SeekBar
