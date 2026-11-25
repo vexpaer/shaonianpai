@@ -90,3 +90,19 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 21 | 竖屏任务详情（PDF/MP3/MP4/板书） | ![21](screenshots/21_portrait_task_detail.png) |
 | 22 | 竖屏课程表（上下分栏） | ![22](screenshots/22_portrait_schedule.png) |
 | 23 | 竖屏系统设置（GitHub 自动更新） | ![23](screenshots/23_portrait_settings_update.png) |
+
+### 福昕风格全功能 PDF 批注阅读器基准截图（`v0.1.2`）
+
+基于原版 APK 内嵌福昕模块（`com.foxit.uiextensions` + `uiextensions_config.json` + 原版 50+ 枚工具栏 PNG 图标与布局规范）结合 `PDFBox-Android` 深度复刻：
+- **智能贴字文字标记**：高亮/强调、下划线、波浪线、删除线（自动吸附 PDF 文本行坐标并摘录原文，扫描件自动平滑回退）
+- **完整绘画与注释工具**：铅笔手绘、直线、箭头、矩形、椭圆、橡皮擦、原版淡黄 `#FFFBD9` 便签批注与回复、打字写字、文本框、指向标注框（Callout）、教学印章（重点/必背/错题/疑问/已掌握/优秀）
+- **属性栏与管理面板**：12 色调色板、1–12px 线宽滑块与预览、25%/50%/75%/100% 四档透明度、撤销/重做、连续标注模式、三标签侧边抽屉（批注列表 / 原生目录 / 书签）、全文关键词搜索、页面缩略图网格、日/夜护眼模式、亮度调节、加密 PDF 解锁及标准 PDF 批注导出分享。
+
+| 序号 | 福昕风格 PDF 批注界面 | 对应原包布局 | 截图 |
+| --- | --- | --- | --- |
+| 24 | 第 1 页全批注实景 + 底部批注快捷栏 | `rd_main_frame.xml` | ![24](screenshots/24_pdf_foxit_annot_bar.png) |
+| 25 | 三分组「全部批注工具」抽屉 | `mt_moretools.xml` | ![25](screenshots/25_pdf_foxit_more_tools.png) |
+| 26 | 颜色 / 线宽 / 透明度属性栏 | `pb_rl_propertybar.xml` | ![26](screenshots/26_pdf_foxit_property_bar.png) |
+| 27 | 三标签侧边抽屉（批注 / 目录 / 书签） | `panel_annot_topbar.xml` + `panel_annot_content.xml` | ![27](screenshots/27_pdf_foxit_side_panel.png) |
+| 28 | 原版淡黄 `#FFFBD9` 便签批注与回复弹窗 | `rd_note_dialog_edit.xml` | ![28](screenshots/28_pdf_foxit_note_dialog.png) |
+| 29 | 竖屏手机版福昕风格 PDF 批注 | `rd_main_frame.xml` | ![29](screenshots/29_portrait_pdf_foxit.png) |

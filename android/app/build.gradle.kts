@@ -3,8 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val resolvedVersionName = (project.findProperty("appVersionName") as String?) ?: "0.1.1"
-val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 101
+val resolvedVersionName = (project.findProperty("appVersionName") as String?) ?: "0.1.2"
+val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 102
 
 val ksPath = System.getenv("RELEASE_KEYSTORE_PATH")
 val ksPassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
@@ -47,6 +47,18 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt"
+            )
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -64,4 +76,5 @@ dependencies {
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 }
