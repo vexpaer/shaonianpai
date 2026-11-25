@@ -2,99 +2,132 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFFFF"
+    android:background="#FFF5F7FA"
     android:orientation="vertical">
 
-    <!-- Top bar with scrollable tags for both portrait phones and landscape tablets -->
+    <!-- Top bar faithful to original activity_questionbook.xml: Back + SpinnerBooks + Tag chips + Filter/View + Search -->
     <LinearLayout
+        android:id="@+id/qbTopBar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="54dp"
         android:background="@color/primaryColor"
         android:elevation="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="6dp"
-        android:paddingEnd="12dp">
+        android:paddingStart="4dp"
+        android:paddingEnd="8dp">
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="返回"
             android:src="@drawable/ic_arrow_back_white_24dp" />
 
-        <TextView
+        <Spinner
+            android:id="@+id/spinnerBooks"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="12dp"
-            android:text="试题本 · 语文 ▾"
-            android:textColor="#FFFFFF"
-            android:textSize="17sp"
-            android:textStyle="bold" />
+            android:layout_height="40dp"
+            android:minWidth="124dp"
+            android:popupBackground="#FFFFFFFF" />
 
-        <HorizontalScrollView
+        <View
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:scrollbars="none">
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+        <ImageButton
+            android:id="@+id/btnToggleGrid"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="切换列表或网格"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_grid_white" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="标签："
-                    android:textColor="#E3F2FD"
-                    android:textSize="14sp" />
+        <ImageButton
+            android:id="@+id/btnFilterMenu"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="分组与筛选"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_manage" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="#33FFFFFF"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="4dp"
-                    android:text="文言文实词"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="#33FFFFFF"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="4dp"
-                    android:text="古诗文默写"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="#33FFFFFF"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingRight="10dp"
-                    android:paddingBottom="4dp"
-                    android:text="二次函数"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </HorizontalScrollView>
+        <ImageButton
+            android:id="@+id/btnSearchToggle"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="搜索"
+            android:padding="8dp"
+            android:scaleType="fitCenter"
+            android:src="@android:drawable/ic_menu_search" />
     </LinearLayout>
 
-    <!-- Responsive SplitView: horizontal in landscape, vertical in portrait -->
+    <!-- Collapsible Search Bar -->
+    <LinearLayout
+        android:id="@+id/llSearchBar"
+        android:layout_width="match_parent"
+        android:layout_height="46dp"
+        android:background="#FFFFFFFF"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/etSearchQb"
+            android:layout_width="0dp"
+            android:layout_height="34dp"
+            android:layout_weight="1"
+            android:background="#FFF1F4F8"
+            android:hint="搜索收藏标题、笔记或标签..."
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:paddingHorizontal="12dp"
+            android:singleLine="true"
+            android:textColor="#FF212121"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/btnClearSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:gravity="center"
+            android:paddingHorizontal="10dp"
+            android:text="关闭"
+            android:textColor="#FF1976D2"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <!-- Interactive Tag Filter Bar (TagsContent in original activity_questionbook.xml) -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFFFF"
+        android:elevation="1dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/llTagsContent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp"
+            android:paddingVertical="8dp" />
+    </HorizontalScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#FFE4E8EE" />
+
+    <!-- Responsive SplitView: horizontal on tablet landscape, vertical on portrait phone -->
     <LinearLayout
         android:id="@+id/splitContainer"
         android:layout_width="match_parent"
@@ -104,23 +137,40 @@
 
         <ListView
             android:id="@+id/listViewSelector"
-            android:layout_width="210dp"
+            android:layout_width="195dp"
             android:layout_height="match_parent"
-            android:background="#FAFAFA"
-            android:divider="@color/separateLine"
+            android:background="#FFFFFFFF"
+            android:divider="#FFEEEEEE"
             android:dividerHeight="1dp" />
 
         <View
             android:id="@+id/splitDivider"
-            android:layout_width="6dp"
+            android:layout_width="2dp"
             android:layout_height="match_parent"
-            android:background="#E0E0E0" />
+            android:background="#FFE0E4EA" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewItems"
+        <FrameLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:padding="12dp" />
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewItems"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:padding="10dp" />
+
+            <TextView
+                android:id="@+id/textViewNoData"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="当前分类没有收藏内容\n点击悬浮按钮展开「截屏 / 拍照 / 草稿本」即可随时收藏"
+                android:textColor="#FF78909C"
+                android:textSize="14sp"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 </LinearLayout>

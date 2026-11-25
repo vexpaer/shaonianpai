@@ -2,21 +2,25 @@ package com.shaonianpai.tablet.ui
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import com.shaonianpai.tablet.R
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.math.hypot
 
 enum class PaperBackground(val label: String) {
-    DEFAULT("默认背景"),
-    HOZ_LINE("横线"),
+    DEFAULT("默认黄底横线"),
+    HOZ_LINE("白底横线"),
     GRID("网格"),
     DOT("点点"),
     VER_LINE("竖线"),
@@ -25,13 +29,13 @@ enum class PaperBackground(val label: String) {
 
 enum class ScratchTool(val label: String) {
     PENCIL("铅笔"),
-    BRUSH("粗笔"),
     ERASER("橡皮擦"),
     TEXT("文字输入")
 }
 
 data class ScratchStroke(
     val isText: Boolean = false,
+    val isEraser: Boolean = false,
     val color: Int = Color.parseColor("#1A237E"),
     val width: Float = 4f,
     val alpha: Int = 255,
@@ -41,6 +45,7 @@ data class ScratchStroke(
     fun toJson(): JSONObject {
         val o = JSONObject()
         o.put("isText", isText)
+        o.put("isEraser", isEraser)
         o.put("color", color)
         o.put("width", width.toDouble())
         o.put("alpha", alpha)
@@ -63,6 +68,7 @@ data class ScratchStroke(
             }
             return ScratchStroke(
                 isText = o.optBoolean("isText", false),
+                isEraser = o.optBoolean("isEraser", false),
                 color = o.optInt("color", Color.BLACK),
                 width = o.optDouble("width", 4.0).toFloat(),
                 alpha = o.optInt("alpha", 255),
@@ -81,7 +87,8 @@ class ScratchpadCanvasView @JvmOverloads constructor(
 
     var activeTool: ScratchTool = ScratchTool.PENCIL
     var activeColor: Int = Color.parseColor("#1A237E")
-    var paperBackground: PaperBackground = PaperBackground.HOZ_LINE
+    var activeStrokeWidth: Float = com.shaonianpai.tablet.data.UserProfileStore.getFinePenWidth(context)
+    var paperBackground: PaperBackground = PaperBackground.DEFAULT
         set(value) {
             field = value
             invalidate()
@@ -94,6 +101,12 @@ class ScratchpadCanvasView @JvmOverloads constructor(
     private val undoStack = ArrayDeque<List<ScratchStroke>>()
     private val redoStack = ArrayDeque<List<ScratchStroke>>()
     private var liveStroke: ScratchStroke? = null
+
+    private val defaultPaperBitmap: Bitmap? by lazy {
+        runCatching { BitmapFactory.decodeResource(resources, R.drawable.background_drawpad) }.getOrNull()
+    }
+    private val paperRect = RectF()
+    private val clearXfer = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
 
     fun setPageStrokes(list: MutableList<ScratchStroke>) {
         strokes = list
@@ -129,9 +142,6 @@ class ScratchpadCanvasView @JvmOverloads constructor(
         invalidate()
         onStrokesChanged?.invoke()
     }
-
-    fun canUndo(): Boolean = undoStack.isNotEmpty()
-    fun canRedo(): Boolean = redoStack.isNotEmpty()
 
     fun undo() {
         if (undoStack.isEmpty()) return
@@ -172,38 +182,54 @@ class ScratchpadCanvasView @JvmOverloads constructor(
         super.onDraw(canvas)
         val w = width.toFloat().coerceAtLeast(1f)
         val h = height.toFloat().coerceAtLeast(1f)
+
+        // 1. Draw paper background layer
         drawPaperBackground(canvas, w, h)
+
+        // 2. Draw all ink + pixel-level pen-style eraser strokes in an isolated offscreen layer
+        //    so PorterDuff.Mode.CLEAR erases ONLY ink strokes without erasing the yellow paper below!
+        val layerId = canvas.saveLayer(0f, 0f, w, h, null)
         for (s in strokes) drawStroke(canvas, s, w, h)
         liveStroke?.let { drawStroke(canvas, it, w, h) }
+        canvas.restoreToCount(layerId)
     }
 
     private fun drawPaperBackground(canvas: Canvas, w: Float, h: Float) {
-        val bgColor = when (paperBackground) {
-            PaperBackground.DEFAULT -> Color.parseColor("#FAF8F0")
-            PaperBackground.HOZ_LINE -> Color.parseColor("#FFFDF7")
-            else -> Color.WHITE
+        if (paperBackground == PaperBackground.DEFAULT) {
+            val bmp = defaultPaperBitmap
+            if (bmp != null) {
+                paperRect.set(0f, 0f, w, h)
+                canvas.drawBitmap(bmp, null, paperRect, null)
+                return
+            }
+            // Fallback yellow legal-pad ruled lines if resource missing
+            canvas.drawColor(Color.parseColor("#F5EE9E"))
+        } else {
+            canvas.drawColor(Color.WHITE)
         }
-        canvas.drawColor(bgColor)
 
         val d = resources.displayMetrics.density
         val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#DCE6F2")
+            color = if (paperBackground == PaperBackground.DEFAULT) Color.parseColor("#C5BE82") else Color.parseColor("#DCE6F2")
             strokeWidth = 1f * d
         }
         val marginPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#F4B8B8")
-            strokeWidth = 1.4f * d
+            color = Color.parseColor("#D98880")
+            strokeWidth = 1.2f * d
         }
         val step = 32f * d
 
         when (paperBackground) {
-            PaperBackground.HOZ_LINE -> {
+            PaperBackground.DEFAULT, PaperBackground.HOZ_LINE -> {
                 var y = step * 1.5f
                 while (y < h) {
                     canvas.drawLine(0f, y, w, y, linePaint)
                     y += step
                 }
                 canvas.drawLine(46f * d, 0f, 46f * d, h, marginPaint)
+                if (paperBackground == PaperBackground.DEFAULT) {
+                    canvas.drawLine(50f * d, 0f, 50f * d, h, marginPaint)
+                }
             }
             PaperBackground.VER_LINE -> {
                 var x = step
@@ -240,13 +266,13 @@ class ScratchpadCanvasView @JvmOverloads constructor(
                     y += dotStep
                 }
             }
-            PaperBackground.DEFAULT, PaperBackground.EMPTY -> Unit
+            PaperBackground.EMPTY -> Unit
         }
     }
 
     private fun drawStroke(canvas: Canvas, s: ScratchStroke, w: Float, h: Float) {
         if (s.points.isEmpty()) return
-        val scale = (w / 960f).coerceAtLeast(0.55f)
+        val scale = (w / 960f).coerceAtLeast(0.6f)
         if (s.isText) {
             val (nx, ny) = s.points.first()
             val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -261,30 +287,30 @@ class ScratchpadCanvasView @JvmOverloads constructor(
             }
             return
         }
+
         val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            color = s.color
-            alpha = s.alpha
-            strokeWidth = (s.width * scale).coerceAtLeast(2f)
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
-        }
-        if (s.points.size == 1) {
-            val (x, y) = s.points[0]
-            canvas.drawPoint(x * w, y * h, p)
-            return
+            if (s.isEraser) {
+                xfermode = clearXfer
+                strokeWidth = (s.width * scale).coerceAtLeast(18f)
+            } else {
+                color = s.color
+                alpha = s.alpha
+                strokeWidth = (s.width * scale).coerceAtLeast(2f)
+            }
         }
         val path = Path()
-        path.moveTo(s.points[0].first * w, s.points[0].second * h)
-        for (i in 1 until s.points.size) {
-            val prev = s.points[i - 1]
-            val curr = s.points[i]
-            val mx = (prev.first + curr.first) * 0.5f * w
-            val my = (prev.second + curr.second) * 0.5f * h
-            path.quadTo(prev.first * w, prev.second * h, mx, my)
+        val first = s.points.first()
+        path.moveTo(first.first * w, first.second * h)
+        if (s.points.size == 1) {
+            path.lineTo(first.first * w + 0.5f, first.second * h + 0.5f)
+        } else {
+            for (i in 1 until s.points.size) {
+                path.lineTo(s.points[i].first * w, s.points[i].second * h)
+            }
         }
-        val last = s.points.last()
-        path.lineTo(last.first * w, last.second * h)
         canvas.drawPath(path, p)
     }
 
@@ -299,56 +325,65 @@ class ScratchpadCanvasView @JvmOverloads constructor(
                 if (event.actionMasked == MotionEvent.ACTION_UP) {
                     onRequestTextAt?.invoke(nx, ny)
                 }
+                return true
             }
             ScratchTool.ERASER -> {
-                if (event.actionMasked == MotionEvent.ACTION_DOWN || event.actionMasked == MotionEvent.ACTION_MOVE) {
-                    val hit = strokes.lastOrNull { st ->
-                        st.points.any { (px, py) -> hypot((nx - px).toDouble(), (ny - py).toDouble()) < 0.032 }
-                    }
-                    if (hit != null) {
-                        pushUndo()
-                        strokes.remove(hit)
-                        invalidate()
-                        onStrokesChanged?.invoke()
-                    }
-                }
-            }
-            ScratchTool.PENCIL, ScratchTool.BRUSH -> {
+                // Pen-style pixel eraser: drags a transparent CLEAR stroke like a real eraser!
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
-                        val fine = com.shaonianpai.tablet.data.UserProfileStore.getFinePenWidth(context)
-                        val thick = com.shaonianpai.tablet.data.UserProfileStore.getThickPenWidth(context)
                         liveStroke = ScratchStroke(
                             isText = false,
-                            color = activeColor,
-                            width = if (activeTool == ScratchTool.BRUSH) thick else fine,
-                            alpha = if (activeTool == ScratchTool.BRUSH) 190 else 255,
+                            isEraser = true,
+                            width = 28f,
                             points = mutableListOf(nx to ny)
                         )
                         invalidate()
                     }
                     MotionEvent.ACTION_MOVE -> {
-                        liveStroke?.points?.let { pts ->
-                            val last = pts.lastOrNull()
-                            if (last == null || hypot((nx - last.first).toDouble(), (ny - last.second).toDouble()) > 0.003) {
-                                pts.add(nx to ny)
-                                invalidate()
-                            }
-                        }
+                        liveStroke?.points?.add(nx to ny)
+                        invalidate()
                     }
-                    MotionEvent.ACTION_UP -> {
-                        val s = liveStroke
-                        liveStroke = null
-                        if (s != null) {
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        liveStroke?.let { finished ->
                             pushUndo()
-                            strokes.add(s)
+                            strokes.add(finished)
                             onStrokesChanged?.invoke()
                         }
+                        liveStroke = null
                         invalidate()
                     }
                 }
+                return true
+            }
+            ScratchTool.PENCIL -> {
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        liveStroke = ScratchStroke(
+                            isText = false,
+                            isEraser = false,
+                            color = activeColor,
+                            width = activeStrokeWidth,
+                            alpha = 255,
+                            points = mutableListOf(nx to ny)
+                        )
+                        invalidate()
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        liveStroke?.points?.add(nx to ny)
+                        invalidate()
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        liveStroke?.let { finished ->
+                            pushUndo()
+                            strokes.add(finished)
+                            onStrokesChanged?.invoke()
+                        }
+                        liveStroke = null
+                        invalidate()
+                    }
+                }
+                return true
             }
         }
-        return true
     }
 }

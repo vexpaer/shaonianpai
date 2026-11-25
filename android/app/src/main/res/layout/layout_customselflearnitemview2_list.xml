@@ -10,9 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingVertical="4dp">
 
-        <!-- Authentic 130dp x 130dp, 10dp padding, centerCrop thumbnail -->
+        <!-- Responsive thumbnail (130dp tablet / 92dp portrait phone) -->
         <ImageView
             android:id="@+id/iv_thumbnail"
             android:layout_width="130dp"
@@ -26,24 +27,26 @@
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="vertical"
-            android:padding="5dp">
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="5dp"
+                android:layout_marginBottom="4dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/tv_title"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:ellipsize="end"
                     android:singleLine="true"
                     android:text="任务标题"
                     android:textColor="@color/textPrimary"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -54,43 +57,26 @@
                     android:src="@drawable/ic_unread" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="wrap_content"
+            <!-- Clean wrapping date range so portrait phones never crush characters vertically -->
+            <TextView
+                android:id="@+id/tv_date_range"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tv_start_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/textSecondary"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="10dp"
-                    android:layout_marginRight="10dp"
-                    android:text="到"
-                    android:textColor="@color/textSecondary"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/tv_end_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/textSecondary"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/textSecondary"
+                android:textSize="12.5sp" />
 
             <TextView
                 android:id="@+id/tv_meta"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="3dp"
+                android:ellipsize="end"
+                android:maxLines="2"
                 android:textColor="#455A64"
-                android:textSize="13sp" />
+                android:textSize="12.5sp" />
 
             <TextView
                 android:id="@+id/tv_description"
@@ -99,28 +85,31 @@
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:textColor="@color/textSecondary"
-                android:textSize="13sp" />
+                android:textSize="12.5sp" />
         </LinearLayout>
 
-        <!-- Authentic 64dp x 64dp circular progress ring, marginEnd 15dp -->
+        <!-- Responsive circular progress ring (64dp tablet / 54dp portrait phone) -->
         <FrameLayout
+            android:id="@+id/progressContainer"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:layout_marginEnd="15dp">
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="12dp">
 
             <com.shaonianpai.tablet.ui.CircularProgressView
                 android:id="@+id/progress"
-                android:layout_width="64dp"
-                android:layout_height="64dp" />
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
             <TextView
                 android:id="@+id/tv_progress"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
+                android:singleLine="true"
                 android:text="100%"
                 android:textColor="#3F51B5"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold" />
         </FrameLayout>
     </LinearLayout>

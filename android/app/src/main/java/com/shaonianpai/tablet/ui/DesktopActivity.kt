@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewConfiguration
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -24,9 +25,11 @@ import kotlin.math.abs
 /**
  * Pure Shaonianpai Study-Desk Desktop:
  * - Background stretches full-screen (fitXY) in BOTH landscape & portrait (supports custom wallpaper from Settings).
- * - All 7 desk items are stored & mapped using normalized relative coordinates [0..1] so they adapt seamlessly
- *   across landscape tablet & portrait phone, and remain draggable in both orientations unless locked.
- * - Left drawer displays live User Avatar, User Name, Class Name, and Server Info from UserProfileStore.
+ * - All 7 desk items use normalized relative coordinates [0..1] + OnLayoutChangeListener + live container
+ *   dimensions on drag so rotating landscape <-> portrait NEVER hides icons or traps drag at a stale boundary.
+ * - Open book (notebook) -> ResourceLibraryActivity (我的资源库); Bookbag -> AppsLauncherActivity (软件入口).
+ * - Left drawer clears monochrome tint so all full-color feature icons render cleanly.
+ * - Bottom-right shows ONLY the version number.
  */
 class DesktopActivity : AppCompatActivity() {
 
@@ -44,10 +47,10 @@ class DesktopActivity : AppCompatActivity() {
         DeskItemSpec("rewards", "人教数字教材", R.drawable.ic_desktop_rewards, 180f / 1024f, 250f / 768f, 103f / 1024f, 138f / 768f),
         DeskItemSpec("clock", "课程闹钟", R.drawable.ic_desktop_clock, 270f / 1024f, 290f / 768f, 62f / 1024f, 103f / 768f),
         DeskItemSpec("schedule", "日历 / 课程表", R.drawable.ic_desktop_schedule, 350f / 1024f, 300f / 768f, 101f / 1024f, 72f / 768f),
-        DeskItemSpec("notebook", "试题本", R.drawable.ic_desktop_notebook, 460f / 1024f, 320f / 768f, 148f / 1024f, 65f / 768f),
+        DeskItemSpec("notebook", "我的资源库", R.drawable.ic_desktop_notebook, 460f / 1024f, 320f / 768f, 148f / 1024f, 65f / 768f),
         DeskItemSpec("study", "自主学习", R.drawable.ic_desktop_study, 610f / 1024f, 330f / 768f, 95f / 1024f, 46f / 768f),
         DeskItemSpec("light", "系统设置", R.drawable.ic_desktop_light, 680f / 1024f, 170f / 768f, 131f / 1024f, 208f / 768f),
-        DeskItemSpec("bookbag", "我的资源库", R.drawable.ic_desktop_bookbag, 780f / 1024f, 260f / 768f, 132f / 1024f, 122f / 768f)
+        DeskItemSpec("bookbag", "软件与应用入口", R.drawable.ic_desktop_bookbag, 780f / 1024f, 260f / 768f, 132f / 1024f, 122f / 768f)
     )
 
     private lateinit var drawerLayout: DrawerLayout
@@ -57,6 +60,9 @@ class DesktopActivity : AppCompatActivity() {
     private lateinit var navView: NavigationView
     private lateinit var tvStatus: TextView
     private lateinit var tvVersion: TextView
+
+    private var lastDeskW = -1
+    private var lastDeskH = -1
 
     companion object {
         private var startupUpdateChecked = false
@@ -74,6 +80,11 @@ class DesktopActivity : AppCompatActivity() {
         tvStatus = findViewById(R.id.textViewIMState)
         tvVersion = findViewById(R.id.textViewVersion)
 
+        // Preserve full-color original icons in left navigation drawer (fixes broken grey squares under 「功能」)
+        navView.itemIconTintList = null
+
+        // Bottom-right displays ONLY the version string
+        tvStatus.visibility = View.GONE
         tvVersion.text = "v${UpdateManager.getCurrentVersionName(this)}"
 
         findViewById<ImageView>(R.id.imageButtonDrawer).setOnClickListener {
@@ -84,22 +95,34 @@ class DesktopActivity : AppCompatActivity() {
         navView.setNavigationItemSelectedListener { menuItem ->
             drawerLayout.closeDrawer(GravityCompat.START)
             when (menuItem.itemId) {
-                R.id.buttonNetworkCheck -> checkServer()
+                R.id.buttonNetworkCheck -> checkServer(showToast = true)
                 R.id.buttonGoOffline -> Toast.makeText(this, "离线学习数据已缓存（3 科 5 任务）", Toast.LENGTH_SHORT).show()
-                R.id.buttonSynchronizeNow -> checkServer()
+                R.id.buttonSynchronizeNow -> checkServer(showToast = true)
                 R.id.buttonSettings -> startActivity(Intent(this, SettingsActivity::class.java))
                 R.id.buttonLogout -> startActivity(Intent(this, LoginActivity::class.java))
                 R.id.nav_selflearn -> startActivity(Intent(this, SelfLearnActivity::class.java))
                 R.id.nav_library -> startActivity(Intent(this, ResourceLibraryActivity::class.java))
                 R.id.nav_questionbook -> startActivity(Intent(this, QuestionBookActivity::class.java))
+                R.id.nav_apps -> startActivity(Intent(this, AppsLauncherActivity::class.java))
                 R.id.nav_schedule -> startActivity(Intent(this, ScheduleActivity::class.java))
                 R.id.nav_bookdetail -> startActivity(Intent(this, BookDetailActivity::class.java))
             }
             true
         }
 
-        rootView.post { refreshDesktop() }
-        checkServer()
+        // Always re-layout desk icons when the actual laid-out dimensions change (rotation / split-screen)
+        deskContainer.addOnLayoutChangeListener { _, l, t, r, b, _, _, _, _ ->
+            val cw = r - l
+            val ch = b - t
+            if (cw > 0 && ch > 0 && (cw != lastDeskW || ch != lastDeskH)) {
+                lastDeskW = cw
+                lastDeskH = ch
+                deskContainer.post { layoutDeskItems() }
+            }
+        }
+
+        rootView.post { refreshDesktop(forceRelayout = true) }
+        checkServer(showToast = false)
         maybeAutoCheckUpdate()
 
         if (intent.getBooleanExtra("open_drawer", false)) {
@@ -112,18 +135,25 @@ class DesktopActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        rootView.post { refreshDesktop() }
+        rootView.post { refreshDesktop(forceRelayout = true) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        rootView.post { refreshDesktop() }
+        lastDeskW = -1
+        lastDeskH = -1
+        deskContainer.requestLayout()
+        deskContainer.post { refreshDesktop(forceRelayout = true) }
     }
 
-    private fun refreshDesktop() {
+    private fun refreshDesktop(forceRelayout: Boolean = false) {
         UserProfileStore.applyDesktopBgTo(this, ivDesktopBg)
         syncDrawerHeader()
-        layoutDeskItems()
+        if (forceRelayout) {
+            lastDeskW = deskContainer.width
+            lastDeskH = deskContainer.height
+            layoutDeskItems()
+        }
     }
 
     private fun syncDrawerHeader() {
@@ -159,14 +189,17 @@ class DesktopActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun checkServer() {
+    private fun checkServer(showToast: Boolean) {
         Thread {
             val (tasks, online) = Repository.fetchDeliveriesSync(this)
-            runOnUiThread {
-                tvStatus.text = if (online) {
-                    "已连接教师服务 · ${tasks.size} 项自主学习任务"
-                } else {
-                    "离线缓存模式 · ${tasks.size} 项本地任务"
+            if (showToast) {
+                runOnUiThread {
+                    val msg = if (online) {
+                        "已连接教师服务 · 同步 ${tasks.size} 项自主学习任务"
+                    } else {
+                        "当前为离线缓存模式 · 本地 ${tasks.size} 项任务"
+                    }
+                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
                 }
             }
         }.start()
@@ -187,25 +220,20 @@ class DesktopActivity : AppCompatActivity() {
         for (spec in items) {
             if (!visibleKeys.contains(spec.key)) continue
 
-            // Migrate legacy pixel coords if user dragged in an older version, otherwise use relative [0..1]
-            val rx = if (prefs.contains("pos_rx_${spec.key}")) {
-                prefs.getFloat("pos_rx_${spec.key}", spec.defaultRelX)
-            } else if (prefs.contains("pos_x_${spec.key}")) {
-                (prefs.getFloat("pos_x_${spec.key}", spec.defaultRelX * 1024f) / 1024f).coerceIn(0f, 0.92f)
-            } else {
-                spec.defaultRelX
-            }
+            val rx = (when {
+                prefs.contains("pos_rx_${spec.key}") -> prefs.getFloat("pos_rx_${spec.key}", spec.defaultRelX)
+                prefs.contains("pos_x_${spec.key}") -> prefs.getFloat("pos_x_${spec.key}", spec.defaultRelX * 1024f) / 1024f
+                else -> spec.defaultRelX
+            }).coerceIn(0f, 0.92f)
 
-            val ry = if (prefs.contains("pos_ry_${spec.key}")) {
-                prefs.getFloat("pos_ry_${spec.key}", spec.defaultRelY)
-            } else if (prefs.contains("pos_y_${spec.key}")) {
-                (prefs.getFloat("pos_y_${spec.key}", spec.defaultRelY * 768f) / 768f).coerceIn(0f, 0.92f)
-            } else {
-                spec.defaultRelY
-            }
+            val ry = (when {
+                prefs.contains("pos_ry_${spec.key}") -> prefs.getFloat("pos_ry_${spec.key}", spec.defaultRelY)
+                prefs.contains("pos_y_${spec.key}") -> prefs.getFloat("pos_y_${spec.key}", spec.defaultRelY * 768f) / 768f
+                else -> spec.defaultRelY
+            }).coerceIn(0f, 0.92f)
 
-            val itemW = (spec.relW * canvasW).toInt().coerceAtLeast(minTapPx)
-            val itemH = (spec.relH * canvasH).toInt().coerceAtLeast(minTapPx)
+            val itemW = (spec.relW * canvasW).toInt().coerceIn(minTapPx, canvasW.toInt().coerceAtLeast(minTapPx))
+            val itemH = (spec.relH * canvasH).toInt().coerceIn(minTapPx, canvasH.toInt().coerceAtLeast(minTapPx))
             val leftPx = (rx * canvasW).toInt().coerceIn(0, (canvasW.toInt() - itemW).coerceAtLeast(0))
             val topPx = (ry * canvasH).toInt().coerceIn(0, (canvasH.toInt() - itemH).coerceAtLeast(0))
 
@@ -243,19 +271,26 @@ class DesktopActivity : AppCompatActivity() {
                             dragging = true
                         }
                         if (dragging) {
+                            // Always read LIVE container width/height so rotation NEVER creates a stale center wall!
+                            val liveW = deskContainer.width.coerceAtLeast(1)
+                            val liveH = deskContainer.height.coerceAtLeast(1)
                             val clp = v.layoutParams as FrameLayout.LayoutParams
-                            clp.leftMargin = (startLeft + dx).toInt().coerceIn(0, (canvasW.toInt() - clp.width).coerceAtLeast(0))
-                            clp.topMargin = (startTop + dy).toInt().coerceIn(0, (canvasH.toInt() - clp.height).coerceAtLeast(0))
+                            val maxLeft = (liveW - clp.width).coerceAtLeast(0)
+                            val maxTop = (liveH - clp.height).coerceAtLeast(0)
+                            clp.leftMargin = (startLeft + dx).toInt().coerceIn(0, maxLeft)
+                            clp.topMargin = (startTop + dy).toInt().coerceIn(0, maxTop)
                             v.layoutParams = clp
                         }
                         true
                     }
                     MotionEvent.ACTION_UP -> {
                         if (dragging) {
+                            val liveW = deskContainer.width.toFloat().coerceAtLeast(1f)
+                            val liveH = deskContainer.height.toFloat().coerceAtLeast(1f)
                             val clp = v.layoutParams as FrameLayout.LayoutParams
                             prefs.edit()
-                                .putFloat("pos_rx_${spec.key}", clp.leftMargin / canvasW)
-                                .putFloat("pos_ry_${spec.key}", clp.topMargin / canvasH)
+                                .putFloat("pos_rx_${spec.key}", (clp.leftMargin / liveW).coerceIn(0f, 0.92f))
+                                .putFloat("pos_ry_${spec.key}", (clp.topMargin / liveH).coerceIn(0f, 0.92f))
                                 .apply()
                         } else {
                             openDeskItem(spec.key)
@@ -272,8 +307,8 @@ class DesktopActivity : AppCompatActivity() {
     private fun openDeskItem(key: String) {
         val intent = when (key) {
             "study" -> Intent(this, SelfLearnActivity::class.java)
-            "bookbag" -> Intent(this, ResourceLibraryActivity::class.java)
-            "notebook" -> Intent(this, QuestionBookActivity::class.java)
+            "notebook" -> Intent(this, ResourceLibraryActivity::class.java)
+            "bookbag" -> Intent(this, AppsLauncherActivity::class.java)
             "schedule", "clock" -> Intent(this, ScheduleActivity::class.java)
             "rewards" -> Intent(this, BookDetailActivity::class.java)
             "light" -> Intent(this, SettingsActivity::class.java)

@@ -225,12 +225,38 @@ class SelfLearnActivity : AppCompatActivity() {
                     val t = item.task
                     val thumb = Repository.buildTaskThumbnail(this@SelfLearnActivity, t.assets)
                     if (holder is ListVH) {
+                        val narrow = resources.configuration.screenWidthDp < 520
+                        val d = resources.displayMetrics.density
+                        val thumbPx = ((if (narrow) 88 else 130) * d).toInt()
+                        if (holder.ivThumb.layoutParams.width != thumbPx) {
+                            holder.ivThumb.layoutParams = holder.ivThumb.layoutParams.apply {
+                                width = thumbPx
+                                height = thumbPx
+                            }
+                            val pad = ((if (narrow) 6 else 10) * d).toInt()
+                            holder.ivThumb.setPadding(pad, pad, pad, pad)
+                        }
+                        val ringPx = ((if (narrow) 52 else 64) * d).toInt()
+                        if (holder.progressContainer.layoutParams.width != ringPx) {
+                            holder.progressContainer.layoutParams = holder.progressContainer.layoutParams.apply {
+                                width = ringPx
+                                height = ringPx
+                            }
+                            holder.tvProgress.textSize = if (narrow) 10.5f else 12.5f
+                        }
+
                         holder.ivThumb.setImageBitmap(thumb)
                         holder.tvTitle.text = t.title
                         holder.ivUnread.visibility = if (t.unreadResourceCount > 0) View.VISIBLE else View.GONE
-                        holder.tvStart.text = t.startDate
-                        holder.tvEnd.text = t.endDate
-                        holder.tvMeta.text = "${t.taskType}  |  未读 ${t.unreadResourceCount} 项  ·  未作答 ${t.unansweredCount} 题  ·  ${t.teacherName}"
+                        val shortEnd = if (t.startDate.take(4) == t.endDate.take(4) && t.endDate.length > 5) {
+                            t.endDate.substring(5)
+                        } else t.endDate
+                        holder.tvDateRange.text = if (narrow) {
+                            "${t.startDate} 至 $shortEnd"
+                        } else {
+                            "${t.startDate}  到  ${t.endDate}"
+                        }
+                        holder.tvMeta.text = "${t.taskType} | 未读${t.unreadResourceCount}项 · 未作答${t.unansweredCount}题 · ${t.teacherName}"
                         holder.tvDesc.text = t.description
                         holder.progressView.progress = t.progressPercent.toFloat()
                         holder.tvProgress.text = "${t.progressPercent}%"
@@ -265,10 +291,10 @@ class SelfLearnActivity : AppCompatActivity() {
         val ivThumb: ImageView = v.findViewById(R.id.iv_thumbnail)
         val tvTitle: TextView = v.findViewById(R.id.tv_title)
         val ivUnread: ImageView = v.findViewById(R.id.iv_unread)
-        val tvStart: TextView = v.findViewById(R.id.tv_start_date)
-        val tvEnd: TextView = v.findViewById(R.id.tv_end_date)
+        val tvDateRange: TextView = v.findViewById(R.id.tv_date_range)
         val tvMeta: TextView = v.findViewById(R.id.tv_meta)
         val tvDesc: TextView = v.findViewById(R.id.tv_description)
+        val progressContainer: View = v.findViewById(R.id.progressContainer)
         val progressView: CircularProgressView = v.findViewById(R.id.progress)
         val tvProgress: TextView = v.findViewById(R.id.tv_progress)
     }

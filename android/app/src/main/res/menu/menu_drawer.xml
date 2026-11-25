@@ -26,7 +26,8 @@
         <menu>
             <item android:id="@+id/nav_selflearn" android:icon="@drawable/ic_ruiyicloud_selflearn" android:title="自主学习" />
             <item android:id="@+id/nav_library" android:icon="@drawable/ic_folder" android:title="我的资源库" />
-            <item android:id="@+id/nav_questionbook" android:icon="@drawable/ic_ruiyicloud_homework" android:title="试题本" />
+            <item android:id="@+id/nav_questionbook" android:icon="@drawable/qb_btn_notebook" android:title="收藏夹 / 试题本" />
+            <item android:id="@+id/nav_apps" android:icon="@drawable/ic_appsfolder" android:title="软件与应用入口" />
             <item android:id="@+id/nav_schedule" android:icon="@drawable/ic_desktop_schedule" android:title="日历 / 课程表" />
             <item android:id="@+id/nav_bookdetail" android:icon="@drawable/ic_pdf" android:title="电子教材详情" />
         </menu>

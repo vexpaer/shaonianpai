@@ -11,50 +11,48 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.shaonianpai.tablet.R
+import com.shaonianpai.tablet.data.UserProfileStore
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
 /**
  * Recreates original FingerDrawActivity / 草稿本:
- * Multi-page scratchpad with right-side vertical toolbar (pencil, brush, text, eraser + long-press clear,
- * color picker, 6 paper backgrounds, undo/redo, save to QuestionBook/Favorites) and bottom page switcher.
+ * - Clean full-bleed default yellow ruled legal-pad canvas (NO top-left text, NO bottom page bar).
+ * - Right-side vertical toolbar without thick brush or back button:
+ *   铅笔, 文字, 橡皮 (silent pen-style pixel eraser, long-press to clear), 调色板 (full palette dialog, no preview dot),
+ *   纸张背景 (crisp lined-paper icon), 撤销, 重做, 收藏.
  */
 class FingerDrawActivity : AppCompatActivity() {
 
     private lateinit var canvasView: ScratchpadCanvasView
-    private lateinit var tvPageInfo: TextView
-    private lateinit var tvPaperBadge: TextView
     private lateinit var llRightTools: LinearLayout
 
-    private val pages = mutableListOf<MutableList<ScratchStroke>>()
-    private var currentPage = 0
+    private val strokes = mutableListOf<ScratchStroke>()
     private val toolButtons = mutableMapOf<ScratchTool, View>()
-    private var colorDotView: View? = null
 
-    private val palette = listOf(
-        "蓝黑墨水" to Color.parseColor("#1A237E"),
-        "纯黑" to Color.parseColor("#212121"),
-        "批改红" to Color.parseColor("#D32F2F"),
-        "湖蓝" to Color.parseColor("#1976D2"),
-        "草绿" to Color.parseColor("#2E7D32"),
-        "醒目橙" to Color.parseColor("#EF6C00"),
-        "重点紫" to Color.parseColor("#7B1FA2"),
-        "荧光黄" to Color.parseColor("#FBC02D")
+    private val paletteColors = listOf(
+        Color.parseColor("#212121"), Color.parseColor("#1A237E"), Color.parseColor("#0D47A1"), Color.parseColor("#1976D2"),
+        Color.parseColor("#00838F"), Color.parseColor("#2E7D32"), Color.parseColor("#558B2F"), Color.parseColor("#F9A825"),
+        Color.parseColor("#EF6C00"), Color.parseColor("#D84315"), Color.parseColor("#D32F2F"), Color.parseColor("#C2185B"),
+        Color.parseColor("#7B1FA2"), Color.parseColor("#512DA8"), Color.parseColor("#4E342E"), Color.parseColor("#546E7A"),
+        Color.parseColor("#616161"), Color.parseColor("#0288D1"), Color.parseColor("#00897B"), Color.parseColor("#43A047"),
+        Color.parseColor("#FB8C00"), Color.parseColor("#E53935"), Color.parseColor("#8E24AA"), Color.parseColor("#FFFFFF")
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        loadScratchpadPages()
-        if (intent.getBooleanExtra("demo_seed_scratch", false) && pages.first().isEmpty()) {
+        loadScratchpad()
+        if (intent.getBooleanExtra("demo_seed_scratch", false) && strokes.isEmpty()) {
             seedDemoMathScratch()
         }
         buildLayout()
-        showPage(currentPage)
+        canvasView.setPageStrokes(strokes)
     }
 
     private fun buildLayout() {
@@ -68,7 +66,7 @@ class FingerDrawActivity : AppCompatActivity() {
         // Right-side vertical toolbar matching activity_fingerdraw.xml
         val scrollRight = ScrollView(this).apply {
             id = View.generateViewId()
-            setBackgroundColor(Color.parseColor("#1976D2"))
+            setBackgroundColor(UserProfileStore.getThemePrimaryColor(this@FingerDrawActivity))
             isVerticalScrollBarEnabled = false
         }
         llRightTools = LinearLayout(this).apply {
@@ -78,14 +76,15 @@ class FingerDrawActivity : AppCompatActivity() {
         }
         scrollRight.addView(llRightTools)
 
-        val rightParams = android.widget.RelativeLayout.LayoutParams(dp(58), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+        val rightParams = android.widget.RelativeLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.MATCH_PARENT).apply {
             addRule(android.widget.RelativeLayout.ALIGN_PARENT_END)
         }
         root.addView(scrollRight, rightParams)
 
-        // Main scratchpad canvas to the left of right toolbar
+        // Full-bleed scratchpad canvas (NO top-left badge, NO bottom page bar!)
         canvasView = ScratchpadCanvasView(this).apply {
-            onStrokesChanged = { saveScratchpadPages() }
+            paperBackground = PaperBackground.DEFAULT
+            onStrokesChanged = { saveScratchpad() }
             onRequestTextAt = { nx, ny -> promptTextAt(nx, ny) }
         }
         val canvasParams = android.widget.RelativeLayout.LayoutParams(
@@ -96,81 +95,6 @@ class FingerDrawActivity : AppCompatActivity() {
         }
         root.addView(canvasView, canvasParams)
 
-        // Top-left title & paper indicator badge (like original textViewQuestionIndex)
-        tvPaperBadge = TextView(this).apply {
-            text = "草稿本 · 横线"
-            textSize = 14f
-            setTextColor(Color.parseColor("#212121"))
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(dp(12), dp(6), dp(12), dp(6))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#DDEEEEEE"))
-                cornerRadius = dp(6).toFloat()
-            }
-            setOnClickListener { showPaperBackgroundDialog() }
-        }
-        val badgeParams = android.widget.RelativeLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply {
-            addRule(android.widget.RelativeLayout.ALIGN_PARENT_START)
-            addRule(android.widget.RelativeLayout.ALIGN_PARENT_TOP)
-            setMargins(dp(12), dp(12), 0, 0)
-        }
-        root.addView(tvPaperBadge, badgeParams)
-
-        // Bottom-center multi-page navigator (matching original layoutNewPage)
-        val navBar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(10), dp(6), dp(10), dp(6))
-            background = GradientDrawable().apply {
-                setColor(Color.parseColor("#EEFFFFFF"))
-                setStroke(dp(1), Color.parseColor("#B0BEC5"))
-                cornerRadius = dp(20).toFloat()
-            }
-            elevation = dp(4).toFloat()
-        }
-        val btnPrev = makeNavPillBtn("◀") {
-            if (currentPage > 0) showPage(currentPage - 1)
-            else Toast.makeText(this, "已是第 1 页", Toast.LENGTH_SHORT).show()
-        }
-        tvPageInfo = TextView(this).apply {
-            text = "第 1 / 1 页"
-            textSize = 13f
-            setTextColor(Color.parseColor("#212121"))
-            setPadding(dp(12), 0, dp(12), 0)
-        }
-        val btnNext = makeNavPillBtn("▶") {
-            if (currentPage < pages.size - 1) showPage(currentPage + 1)
-            else {
-                pages.add(mutableListOf())
-                showPage(pages.size - 1)
-                saveScratchpadPages()
-                Toast.makeText(this, "已新建第 ${pages.size} 页草稿纸", Toast.LENGTH_SHORT).show()
-            }
-        }
-        val btnNewPage = makeNavPillBtn("+新页") {
-            pages.add(mutableListOf())
-            showPage(pages.size - 1)
-            saveScratchpadPages()
-            Toast.makeText(this, "已新建第 ${pages.size} 页草稿纸", Toast.LENGTH_SHORT).show()
-        }
-        navBar.addView(btnPrev)
-        navBar.addView(tvPageInfo)
-        navBar.addView(btnNext)
-        navBar.addView(btnNewPage)
-
-        val navParams = android.widget.RelativeLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        ).apply {
-            addRule(android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM)
-            addRule(android.widget.RelativeLayout.CENTER_HORIZONTAL)
-            bottomMargin = dp(14)
-        }
-        root.addView(navBar, navParams)
-
         populateRightToolbar()
         setContentView(root)
         selectTool(ScratchTool.PENCIL)
@@ -180,21 +104,17 @@ class FingerDrawActivity : AppCompatActivity() {
         llRightTools.removeAllViews()
         toolButtons.clear()
 
-        // 1. Back / exit
-        llRightTools.addView(makeSideBtn("返回", R.drawable.ic_arrow_back_white_24dp, null) { finish() })
-
-        // 2. Drawing tools using authentic original icons
+        // Authentic right toolbar: NO thick brush, NO back button!
         val pencilBtn = makeSideBtn("铅笔", R.drawable.fd_ic_pencil, null) { selectTool(ScratchTool.PENCIL) }
-        val brushBtn = makeSideBtn("粗笔", R.drawable.fd_ic_brush, null) { selectTool(ScratchTool.BRUSH) }
         val textBtn = makeSideBtn("文字", R.drawable.fd_ic_text, null) { selectTool(ScratchTool.TEXT) }
         val eraserBtn = makeSideBtn("橡皮", R.drawable.fd_ic_eraser, null) {
+            // Silent selection — pen-style pixel eraser with NO toast popup!
             selectTool(ScratchTool.ERASER)
-            Toast.makeText(this, "橡皮擦：划过笔迹擦除，长按清空本页", Toast.LENGTH_SHORT).show()
         }
         eraserBtn.setOnLongClickListener {
             AlertDialog.Builder(this)
-                .setTitle("清空当前草稿页")
-                .setMessage("确定要清除第 ${currentPage + 1} 页的全部笔迹吗？（可通过撤销恢复）")
+                .setTitle("清空草稿纸")
+                .setMessage("确定要清除当前全部笔迹吗？（可通过撤销恢复）")
                 .setPositiveButton("清空") { _, _ -> canvasView.clearPage() }
                 .setNegativeButton("取消", null)
                 .show()
@@ -202,43 +122,30 @@ class FingerDrawActivity : AppCompatActivity() {
         }
 
         toolButtons[ScratchTool.PENCIL] = pencilBtn
-        toolButtons[ScratchTool.BRUSH] = brushBtn
         toolButtons[ScratchTool.TEXT] = textBtn
         toolButtons[ScratchTool.ERASER] = eraserBtn
 
         llRightTools.addView(pencilBtn)
-        llRightTools.addView(brushBtn)
         llRightTools.addView(textBtn)
         llRightTools.addView(eraserBtn)
 
-        // 3. Color picker with live dot
-        val colorContainer = makeSideBtn("颜色", R.drawable.fd_ic_colorize, null) { showColorDialog() }
-        val dot = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(12), dp(12)).apply { topMargin = dp(2) }
-            background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(canvasView.activeColor)
-                setStroke(dp(1), Color.WHITE)
-            }
-        }
-        colorDotView = dot
-        (colorContainer as LinearLayout).addView(dot)
-        llRightTools.addView(colorContainer)
+        // Color Palette button (NO preview dot under icon; opens rich palette dialog)
+        llRightTools.addView(makeSideBtn("调色板", R.drawable.fd_ic_colorize, null) { showColorPaletteDialog() })
 
-        // 4. Paper background switcher (6 original backgrounds)
-        llRightTools.addView(makeSideBtn("纸张", R.drawable.fd_ic_rotate, null) { showPaperBackgroundDialog() })
+        // Paper background selector with proper lined-paper icon
+        llRightTools.addView(makeSideBtn("纸张", R.drawable.fd_ic_paper_bg, null) { showPaperBackgroundDialog() })
 
-        // 5. Undo / Redo
+        // Undo / Redo
         llRightTools.addView(makeSideBtn("撤销", R.drawable.fx_annot_undo, Color.WHITE) { canvasView.undo() })
         llRightTools.addView(makeSideBtn("重做", R.drawable.fx_annot_redo, Color.WHITE) { canvasView.redo() })
 
-        // 6. Save to Favorites / QuestionBook
+        // Save to Favorites
         llRightTools.addView(makeSideBtn("收藏", R.drawable.qb_btn_notebook, null) {
             val bmp = canvasView.exportToBitmap()
             AddToQuestionBookDialog.show(
                 activity = this,
                 sourceType = "SCRATCHPAD",
-                defaultTitle = "草稿本第 ${currentPage + 1} 页",
+                defaultTitle = "草稿本笔记",
                 defaultBook = "草稿本存档",
                 defaultTag = "草稿",
                 bitmap = bmp
@@ -259,33 +166,191 @@ class FingerDrawActivity : AppCompatActivity() {
         }
     }
 
-    private fun showColorDialog() {
-        val names = palette.map { it.first }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("选择画笔颜色")
-            .setItems(names) { _, which ->
-                val col = palette[which].second
-                canvasView.activeColor = col
-                colorDotView?.background = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(col)
-                    setStroke(dp(1), Color.WHITE)
+    private fun makeSideBtn(label: String, iconRes: Int, tint: Int?, onClick: () -> Unit): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(4), dp(8), dp(4), dp(8))
+            layoutParams = LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = dp(4)
+            }
+            addView(ImageView(this@FingerDrawActivity).apply {
+                setImageResource(iconRes)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                if (tint != null) setColorFilter(tint)
+                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26))
+            })
+            addView(TextView(this@FingerDrawActivity).apply {
+                text = label
+                textSize = 10f
+                setTextColor(Color.WHITE)
+                gravity = Gravity.CENTER
+                setPadding(0, dp(2), 0, 0)
+            })
+            setOnClickListener { onClick() }
+        }
+    }
+
+    /** Full interactive color palette + RGB tuner + stroke thickness dialog */
+    private fun showColorPaletteDialog() {
+        var pickedColor = canvasView.activeColor
+        var pickedWidth = canvasView.activeStrokeWidth
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(14), dp(18), dp(8))
+        }
+
+        val previewStrip = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(34)).apply {
+                bottomMargin = dp(12)
+            }
+            background = GradientDrawable().apply {
+                setColor(pickedColor)
+                setStroke(dp(1), Color.parseColor("#BDBDBD"))
+                cornerRadius = dp(6).toFloat()
+            }
+        }
+        root.addView(previewStrip)
+
+        // 24-color 6x4 swatch grid
+        val swatchViews = mutableListOf<Pair<Int, View>>()
+        fun refreshPreview() {
+            (previewStrip.background as? GradientDrawable)?.setColor(pickedColor)
+            swatchViews.forEach { (c, v) ->
+                (v.background as? GradientDrawable)?.setStroke(
+                    if (c == pickedColor) dp(3) else dp(1),
+                    if (c == pickedColor) Color.parseColor("#1976D2") else Color.parseColor("#CCCCCC")
+                )
+            }
+        }
+
+        val cols = 6
+        for (rowIdx in 0 until (paletteColors.size + cols - 1) / cols) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = dp(8)
                 }
             }
+            for (cIdx in 0 until cols) {
+                val idx = rowIdx * cols + cIdx
+                if (idx >= paletteColors.size) break
+                val color = paletteColors[idx]
+                val sw = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply {
+                        marginStart = dp(4)
+                        marginEnd = dp(4)
+                    }
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(color)
+                        setStroke(dp(1), Color.parseColor("#CCCCCC"))
+                    }
+                }
+                swatchViews.add(color to sw)
+                row.addView(sw)
+            }
+            root.addView(row)
+        }
+
+        // RGB Fine Tuning Sliders
+        val tvR = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#D32F2F")) }
+        val tvG = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#2E7D32")) }
+        val tvB = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#1976D2")) }
+        val sbR = SeekBar(this).apply { max = 255 }
+        val sbG = SeekBar(this).apply { max = 255 }
+        val sbB = SeekBar(this).apply { max = 255 }
+
+        fun syncSlidersFromColor() {
+            sbR.progress = Color.red(pickedColor)
+            sbG.progress = Color.green(pickedColor)
+            sbB.progress = Color.blue(pickedColor)
+            tvR.text = "红 (R): ${sbR.progress}"
+            tvG.text = "绿 (G): ${sbG.progress}"
+            tvB.text = "蓝 (B): ${sbB.progress}"
+            refreshPreview()
+        }
+
+        swatchViews.forEach { (color, sw) ->
+            sw.setOnClickListener {
+                pickedColor = color
+                syncSlidersFromColor()
+            }
+        }
+
+        val rgbListener = object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    pickedColor = Color.rgb(sbR.progress, sbG.progress, sbB.progress)
+                    tvR.text = "红 (R): ${sbR.progress}"
+                    tvG.text = "绿 (G): ${sbG.progress}"
+                    tvB.text = "蓝 (B): ${sbB.progress}"
+                    refreshPreview()
+                }
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        }
+        sbR.setOnSeekBarChangeListener(rgbListener)
+        sbG.setOnSeekBarChangeListener(rgbListener)
+        sbB.setOnSeekBarChangeListener(rgbListener)
+
+        root.addView(tvR)
+        root.addView(sbR)
+        root.addView(tvG)
+        root.addView(sbG)
+        root.addView(tvB)
+        root.addView(sbB)
+
+        // Pen thickness slider
+        val tvW = TextView(this).apply {
+            text = "画笔粗细：${pickedWidth.toInt()} px"
+            textSize = 12.5f
+            setTextColor(Color.parseColor("#424242"))
+            setPadding(0, dp(8), 0, dp(2))
+        }
+        val sbW = SeekBar(this).apply {
+            max = 14
+            progress = (pickedWidth.toInt() - 1).coerceIn(0, 14)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    pickedWidth = (progress + 1).toFloat()
+                    tvW.text = "画笔粗细：${pickedWidth.toInt()} px"
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+        root.addView(tvW)
+        root.addView(sbW)
+
+        syncSlidersFromColor()
+
+        val sv = ScrollView(this).apply { addView(root) }
+        AlertDialog.Builder(this)
+            .setTitle("调色板")
+            .setView(sv)
+            .setPositiveButton("确定") { _, _ ->
+                canvasView.activeColor = pickedColor
+                canvasView.activeStrokeWidth = pickedWidth
+                if (canvasView.activeTool == ScratchTool.ERASER) {
+                    selectTool(ScratchTool.PENCIL)
+                }
+            }
+            .setNegativeButton("取消", null)
             .show()
     }
 
     private fun showPaperBackgroundDialog() {
-        val bgs = PaperBackground.values()
-        val labels = bgs.map { it.label }.toTypedArray()
-        val curIdx = bgs.indexOf(canvasView.paperBackground).coerceAtLeast(0)
+        val values = PaperBackground.values()
+        val labels = values.map { it.label }.toTypedArray()
+        val curIdx = values.indexOf(canvasView.paperBackground).coerceAtLeast(0)
         AlertDialog.Builder(this)
-            .setTitle("草稿纸背景（原版 6 种样式）")
+            .setTitle("选择草稿纸背景")
             .setSingleChoiceItems(labels, curIdx) { dlg, which ->
-                canvasView.paperBackground = bgs[which]
-                tvPaperBadge.text = "草稿本 · ${bgs[which].label}"
-                getSharedPreferences("shaonianpai_prefs", MODE_PRIVATE)
-                    .edit().putString("scratch_bg", bgs[which].name).apply()
+                canvasView.paperBackground = values[which]
                 dlg.dismiss()
             }
             .show()
@@ -294,136 +359,90 @@ class FingerDrawActivity : AppCompatActivity() {
     private fun promptTextAt(nx: Float, ny: Float) {
         val et = EditText(this).apply {
             hint = "在这里输入文字，支持多行"
-            minLines = 3
+            minLines = 2
+            setPadding(dp(14), dp(10), dp(14), dp(10))
         }
         AlertDialog.Builder(this)
-            .setTitle("插入文字")
+            .setTitle("文字输入")
             .setView(et)
-            .setPositiveButton("确定") { _, _ ->
-                canvasView.addTextStroke(nx, ny, et.text.toString().trim())
+            .setPositiveButton("添加") { _, _ ->
+                canvasView.addTextStroke(nx, ny, et.text.toString())
             }
             .setNegativeButton("取消", null)
             .show()
     }
 
-    private fun showPage(index: Int) {
-        currentPage = index.coerceIn(0, pages.size - 1)
-        canvasView.setPageStrokes(pages[currentPage])
-        tvPageInfo.text = "第 ${currentPage + 1} / ${pages.size} 页"
-        val savedBg = getSharedPreferences("shaonianpai_prefs", MODE_PRIVATE)
-            .getString("scratch_bg", PaperBackground.HOZ_LINE.name)
-        val bg = runCatching { PaperBackground.valueOf(savedBg ?: "") }.getOrDefault(PaperBackground.HOZ_LINE)
-        canvasView.paperBackground = bg
-        tvPaperBadge.text = "草稿本 · ${bg.label}"
-    }
+    private fun scratchFile(): File = File(filesDir, "scratchpad_pages.json")
 
-    private fun scratchFile(): File = File(File(filesDir, "scratchpad").apply { mkdirs() }, "pages.json")
-
-    private fun loadScratchpadPages() {
-        pages.clear()
+    private fun loadScratchpad() {
+        strokes.clear()
         val f = scratchFile()
         if (f.exists()) {
             runCatching {
-                val arr = JSONArray(f.readText())
-                for (i in 0 until arr.length()) {
-                    val pArr = arr.getJSONArray(i)
-                    val list = mutableListOf<ScratchStroke>()
+                val root = JSONObject(f.readText())
+                val arr = root.optJSONArray("pages")
+                if (arr != null && arr.length() > 0) {
+                    val pArr = arr.getJSONArray(0)
                     for (j in 0 until pArr.length()) {
-                        list.add(ScratchStroke.fromJson(pArr.getJSONObject(j)))
+                        strokes.add(ScratchStroke.fromJson(pArr.getJSONObject(j)))
                     }
-                    pages.add(list)
                 }
             }
         }
-        if (pages.isEmpty()) pages.add(mutableListOf())
     }
 
-    private fun saveScratchpadPages() {
-        val root = JSONArray()
-        for (p in pages) {
+    private fun saveScratchpad() {
+        runCatching {
+            val pagesArr = JSONArray()
             val pArr = JSONArray()
-            for (s in p) pArr.put(s.toJson())
-            root.put(pArr)
+            for (s in strokes) pArr.put(s.toJson())
+            pagesArr.put(pArr)
+            val root = JSONObject().put("pages", pagesArr)
+            scratchFile().writeText(root.toString())
         }
-        runCatching { scratchFile().writeText(root.toString()) }
     }
 
     private fun seedDemoMathScratch() {
-        val p = pages.first()
-        p.add(
+        strokes.add(
             ScratchStroke(
                 isText = true,
                 color = Color.parseColor("#1A237E"),
-                points = mutableListOf(0.08f to 0.16f),
-                text = "二次函数草稿演算：y = x² - 4x + 3 = (x - 2)² - 1\n对称轴 x = 2，顶点 (2, -1)"
-            )
-        )
-        // Draw simple parabola sketch & axis
-        p.add(
-            ScratchStroke(
-                color = Color.parseColor("#455A64"),
-                width = 3f,
-                points = mutableListOf(0.14f to 0.62f, 0.72f to 0.62f)
-            )
-        )
-        p.add(
-            ScratchStroke(
-                color = Color.parseColor("#455A64"),
-                width = 3f,
-                points = mutableListOf(0.24f to 0.34f, 0.24f to 0.78f)
+                points = mutableListOf(0.10f to 0.14f),
+                text = "二次函数草稿演算：\ny = x² - 4x + 3 = (x - 2)² - 1\n对称轴 x = 2，顶点 (2, -1)"
             )
         )
         val parabola = mutableListOf<Pair<Float, Float>>()
-        for (i in 0..24) {
-            val t = -1.5f + i * (3.0f / 24f)
-            val x = 0.42f + t * 0.11f
-            val y = 0.70f - (t * t) * 0.15f
+        for (i in 0..40) {
+            val t = -1f + 2f * i / 40f
+            val x = 0.42f + t * 0.22f
+            val y = 0.72f - t * t * 0.28f
             parabola.add(x to y)
         }
-        p.add(ScratchStroke(color = Color.parseColor("#D32F2F"), width = 5f, points = parabola))
-        p.add(
+        strokes.add(
             ScratchStroke(
-                isText = true,
+                isText = false,
                 color = Color.parseColor("#D32F2F"),
-                points = mutableListOf(0.46f to 0.76f),
-                text = "顶点 (2, -1) 最小值"
+                width = 4.5f,
+                points = parabola
             )
         )
-        saveScratchpadPages()
-    }
-
-    private fun makeSideBtn(label: String, iconRes: Int, tint: Int?, onClick: () -> Unit): View {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(4), dp(6), dp(4), dp(6))
-            layoutParams = LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(4)
-            }
-            addView(ImageView(this@FingerDrawActivity).apply {
-                setImageResource(iconRes)
-                if (tint != null) setColorFilter(tint)
-                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26))
-                scaleType = ImageView.ScaleType.FIT_CENTER
-            })
-            addView(TextView(this@FingerDrawActivity).apply {
-                text = label
-                textSize = 10f
-                gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                setTextColor(Color.WHITE)
-            })
-            setOnClickListener { onClick() }
-        }
-    }
-
-    private fun makeNavPillBtn(label: String, onClick: () -> Unit): TextView = TextView(this).apply {
-        text = label
-        textSize = 13f
-        setTextColor(Color.parseColor("#1976D2"))
-        setTypeface(null, android.graphics.Typeface.BOLD)
-        setPadding(dp(10), dp(4), dp(10), dp(4))
-        setOnClickListener { onClick() }
+        strokes.add(
+            ScratchStroke(
+                isText = false,
+                color = Color.parseColor("#1976D2"),
+                width = 3f,
+                points = mutableListOf(0.18f to 0.65f, 0.68f to 0.65f)
+            )
+        )
+        strokes.add(
+            ScratchStroke(
+                isText = false,
+                color = Color.parseColor("#1976D2"),
+                width = 3f,
+                points = mutableListOf(0.42f to 0.36f, 0.42f to 0.80f)
+            )
+        )
+        saveScratchpad()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()

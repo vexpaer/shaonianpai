@@ -5,6 +5,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".ShaonianpaiApplication"
         android:allowBackup="true"
@@ -123,6 +130,13 @@
             android:label="拍照收藏"
             android:screenOrientation="fullUser"
             android:theme="@style/Theme.AppCompat.Light.Dialog" />
+
+        <activity
+            android:name=".ui.AppsLauncherActivity"
+            android:exported="true"
+            android:label="软件与应用入口"
+            android:screenOrientation="fullUser"
+            android:theme="@style/AppTheme.NoActionBar" />
 
     </application>
 </manifest>

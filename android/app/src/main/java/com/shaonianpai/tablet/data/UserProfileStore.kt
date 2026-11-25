@@ -20,7 +20,7 @@ object UserProfileStore {
     private const val PREF = "shaonianpai_prefs"
 
     val ALL_DESK_ICON_KEYS = listOf("rewards", "clock", "schedule", "notebook", "study", "light", "bookbag")
-    val ALL_DESK_ICON_LABELS = listOf("奖杯（数字教材）", "闹钟（课程提醒）", "日历（课程表）", "笔记本（试题本）", "书本（自主学习）", "台灯（系统设置）", "公文包（资源库）")
+    val ALL_DESK_ICON_LABELS = listOf("奖杯（数字教材）", "闹钟（课程提醒）", "日历（课程表）", "翻开的书（资源库）", "合册（自主学习）", "台灯（系统设置）", "书包（软件入口）")
 
     val BG_PRESETS = listOf(
         "DEFAULT" to "原版书桌背景（默认）",

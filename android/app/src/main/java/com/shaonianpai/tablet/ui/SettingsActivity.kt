@@ -275,15 +275,31 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(Color.parseColor("#757575"))
             setPadding(0, dp(3), 0, dp(8))
         })
-        val btnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        btnRow.addView(makePrimaryButton("相册选图") { pickImage(REQ_PICK_AVATAR) })
-        btnRow.addView(makeOutlineButton("内置头像") { showAvatarPresetDialog() }.apply {
-            (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
-        })
-        btnCol.addView(btnRow)
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                if (!isTwoPane) topMargin = dp(10)
+            }
+        }
+        val btnPickAvatar = makePrimaryButton("相册选图") { pickImage(REQ_PICK_AVATAR) }
+        val btnPresetAvatar = makeOutlineButton("内置头像") { showAvatarPresetDialog() }
+        if (!isTwoPane) {
+            btnPickAvatar.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            btnPresetAvatar.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(10) }
+        } else {
+            (btnPresetAvatar.layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
+        }
+        btnRow.addView(btnPickAvatar)
+        btnRow.addView(btnPresetAvatar)
+        if (isTwoPane) {
+            btnCol.addView(btnRow)
+        }
         avatarRow.addView(ivPreview)
         avatarRow.addView(btnCol)
         avatarCard.addView(avatarRow)
+        if (!isTwoPane) {
+            avatarCard.addView(btnRow)
+        }
         llLevel2.addView(avatarCard)
 
         llLevel2.addView(makeCategoryTitle("当前账户信息"))
@@ -362,15 +378,31 @@ class SettingsActivity : AppCompatActivity() {
             setTextColor(Color.parseColor("#757575"))
             setPadding(0, dp(3), 0, dp(8))
         })
-        val bgBtnRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        bgBtnRow.addView(makePrimaryButton("相册换壁纸") { pickImage(REQ_PICK_BG) })
-        bgBtnRow.addView(makeOutlineButton("预设 / 还原") { showBgPresetDialog() }.apply {
-            (layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
-        })
-        bgInfo.addView(bgBtnRow)
+        val bgBtnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                if (!isTwoPane) topMargin = dp(10)
+            }
+        }
+        val btnPickBg = makePrimaryButton("相册换壁纸") { pickImage(REQ_PICK_BG) }
+        val btnPresetBg = makeOutlineButton("预设 / 还原") { showBgPresetDialog() }
+        if (!isTwoPane) {
+            btnPickBg.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            btnPresetBg.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(10) }
+        } else {
+            (btnPresetBg.layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
+        }
+        bgBtnRow.addView(btnPickBg)
+        bgBtnRow.addView(btnPresetBg)
+        if (isTwoPane) {
+            bgInfo.addView(bgBtnRow)
+        }
         bgRow.addView(ivBgPreview)
         bgRow.addView(bgInfo)
         bgCard.addView(bgRow)
+        if (!isTwoPane) {
+            bgCard.addView(bgBtnRow)
+        }
         llLevel2.addView(bgCard)
 
         llLevel2.addView(makeCategoryTitle("桌面图标与悬浮工具条"))
@@ -394,7 +426,7 @@ class SettingsActivity : AppCompatActivity() {
             Toast.makeText(this, "已还原全部 7 个桌面图标默认相对坐标", Toast.LENGTH_SHORT).show()
         })
         iconCard.addView(makeDivider())
-        iconCard.addView(makeSwitchRow("显示全局悬浮快捷条", "收藏夹 / 截屏 / 拍照 / 草稿本 / 速记", FloatingQuickBar.isEnabled(this)) {
+        iconCard.addView(makeSwitchRow("显示全局悬浮快捷条", "收藏夹 / 截屏 / 拍照 / 草稿本", FloatingQuickBar.isEnabled(this)) {
             FloatingQuickBar.setEnabled(this, it)
             FloatingQuickBar.attachIfNeeded(this)
         })
@@ -605,13 +637,15 @@ class SettingsActivity : AppCompatActivity() {
         card.addView(actionRow)
         card.addView(tvStatus)
         card.addView(makeDivider().apply { (layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(12) })
-        card.addView(makePrefRow("查看版本更新记录", "v0.1.0 → v0.1.4 完整演进日志") {
+        card.addView(makePrefRow("查看版本更新记录", "v0.1.0 → v0.1.6 完整演进日志") {
             AlertDialog.Builder(this)
                 .setTitle("版本更新记录")
                 .setMessage(
-                    "• v0.1.4：纯书桌全屏拉伸与相对坐标、1+2 级原版架构设置（壁纸/头像/用户名）、任务详情内嵌 PDF 预览与左侧目录、福昕 PDF 页码/顶栏/连续滚动精修\n\n" +
-                        "• v0.1.3：原版蓝框全局悬浮快捷条、真实本地收藏夹与 6 种纸张多页草稿本\n\n" +
-                        "• v0.1.2：福昕风格全功能 PDF 批注阅读器（PDFBox 划词高亮/搜索/目录/导出）\n\n" +
+                    "• v0.1.6：修复竖屏任务日期拥挤与设置页按钮换行；悬浮条纯图标去速记；草稿本还原默认黄底横线纸、真像素擦除橡皮与调色板；修复横竖屏旋转拖动越界/图标消失；右下角仅显示版本；翻开的书→资源库、书包→软件入口；修复抽屉底部功能图标；重构原版收藏夹/试题本（书本下拉、标签栏、列表/网格切换、分组筛选）\n\n" +
+                        "• v0.1.5：任务详情 PDF 两段式占位展开、浅底音频条、视频真实封面帧预览、纯白边框福昕阅读页\n\n" +
+                        "• v0.1.4：纯书桌全屏拉伸与相对坐标、1+2 级原版架构设置（壁纸/头像/用户名）、任务详情内嵌 PDF 预览与左侧目录\n\n" +
+                        "• v0.1.3：原版蓝框全局悬浮快捷条、本地收藏夹与草稿本\n\n" +
+                        "• v0.1.2：福昕风格全功能 PDF 批注阅读器\n\n" +
                         "• v0.1.1：固定正式签名与 v0.1.n+1 自动发布\n\n" +
                         "• v0.1.0：原生客户端与本地教师端首版"
                 )
@@ -827,13 +861,20 @@ class SettingsActivity : AppCompatActivity() {
     private fun makePrimaryButton(label: String, onClick: () -> Unit): Button = Button(this).apply {
         text = label
         textSize = 13f
+        isSingleLine = true
+        maxLines = 1
+        isAllCaps = false
+        ellipsize = android.text.TextUtils.TruncateAt.END
         setTextColor(Color.WHITE)
         background = GradientDrawable().apply {
             setColor(UserProfileStore.getThemePrimaryColor(this@SettingsActivity))
             cornerRadius = dp(6).toFloat()
         }
-        setPadding(dp(14), dp(6), dp(14), dp(6))
-        minHeight = dp(36)
+        setPadding(dp(12), dp(6), dp(12), dp(6))
+        minWidth = 0
+        minimumWidth = 0
+        minHeight = dp(38)
+        minimumHeight = dp(38)
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         setOnClickListener { onClick() }
     }
@@ -841,6 +882,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun makeOutlineButton(label: String, onClick: () -> Unit): Button = Button(this).apply {
         text = label
         textSize = 13f
+        isSingleLine = true
+        maxLines = 1
+        isAllCaps = false
+        ellipsize = android.text.TextUtils.TruncateAt.END
         val primary = UserProfileStore.getThemePrimaryColor(this@SettingsActivity)
         setTextColor(primary)
         background = GradientDrawable().apply {
@@ -848,8 +893,11 @@ class SettingsActivity : AppCompatActivity() {
             setStroke(dp(1), primary)
             cornerRadius = dp(6).toFloat()
         }
-        setPadding(dp(14), dp(6), dp(14), dp(6))
-        minHeight = dp(36)
+        setPadding(dp(12), dp(6), dp(12), dp(6))
+        minWidth = 0
+        minimumWidth = 0
+        minHeight = dp(38)
+        minimumHeight = dp(38)
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         setOnClickListener { onClick() }
     }

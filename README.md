@@ -148,4 +148,23 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 40 | 任务详情 PDF 展开态（左右箭头 + 右上角蓝框 `↗↙` 放大钮） | `layout_customdocumentview.xml` (`fl_pdfcontent` + `iv_fullscreen`) | ![40](screenshots/40_task_detail_pdf_expanded_inline.png) |
 | 41 | 独立福昕 PDF 阅读页（白色边框 + 浅白顶栏 + 底栏按钮） | `rd_main_frame.xml` | ![41](screenshots/41_pdf_foxit_white_frame.png) |
 
+### 实机体验 9 项精细修复与原版还原（`v0.1.6`）
+
+- **竖屏任务日期与进度环修复**：自主学习列表在竖屏自动合并日期行并等比收缩缩略图与进度环，杜绝竖排挤字与 `100%` 截断。
+- **悬浮快捷条纯图标化**：移除全部按钮下方文字标签与「速记」，仅保留原版 4 枚纯图标展开工具（收藏夹 / 截屏 / 拍照 / 草稿本）。
+- **草稿本深度对齐原版**：默认使用原包 `background_drawpad.jpg` 黄底横线纸；移除左上角文字、底部页码加页栏、右侧粗笔与返回按钮及颜色预览点；橡皮擦改用 `PorterDuff.Mode.CLEAR` 离屏图层实现**真像素笔式擦除**且静默切换；调色板升级为 24 色色块 + RGB 滑块 + 笔粗细调色窗；更换清晰横线纸张图标。
+- **横竖屏旋转防丢失/防越界根治**：书桌与悬浮条均绑定 `OnLayoutChangeListener` 并在拖动时实时读取容器宽高，彻底解决横竖屏切换后图标消失或拖动被卡在屏幕中央的问题。
+- **桌面映射与细节修正**：右下角仅显示版本号；翻开的书进入「我的资源库」，书包进入「软件与应用入口（`AppsLauncherActivity`，异步加载设备已安装软件）」；清除左侧抽屉 `NavigationView` 单色着色，修复底部「功能」全彩图标显示。
+- **收藏夹/试题本原版重构 & 竖屏设置防换行**：完整还原 `activity_questionbook.xml` 顶部书本下拉、可点击标签栏、列表/网格相册切换、日期/来源分组、搜索及评论/编辑菜单；设置页按钮统一单行防换行并在竖屏采用独立等宽按钮行。
+
+| 序号 | 页面 | 对应原包布局 | 截图 |
+| --- | --- | --- | --- |
+| 42 | 书桌左侧抽屉全彩图标修复 + 右下角仅显版本 | `activity_desktop.xml` + `menu_drawer.xml` | ![42](screenshots/42_desktop_drawer_fixed_icons.png) |
+| 43 | 书包 → 软件与应用入口网格 | `dialog_allapps.xml` | ![43](screenshots/43_apps_launcher_bookbag.png) |
+| 44 | 草稿本（默认黄底横线纸 + 精简右侧栏） | `activity_fingerdraw.xml` + `background_drawpad.jpg` | ![44](screenshots/44_scratchpad_yellow_lined.png) |
+| 45 | 重构原版收藏夹 / 试题本（书本下拉 + 标签 + 网格切换） | `activity_questionbook.xml` + `layout_customquestionbookitemview.xml` | ![45](screenshots/45_questionbook_redesigned.png) |
+| 46 | 竖屏自主学习（日期修复 + 纯图标 4 工具悬浮条） | `layout_customselflearnitemview2_list.xml` + `layout_questionbookbuttons.xml` | ![46](screenshots/46_portrait_selflearn_fab_fixed.png) |
+| 47 | 竖屏设置二级页（单行等宽按钮无换行） | `activity_settings.xml` | ![47](screenshots/47_portrait_settings_ui_fixed.png) |
+
+
 
