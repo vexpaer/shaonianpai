@@ -10,9 +10,9 @@
         android:id="@+id/MainDesktopView2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#FFECEFF1">
+        android:background="#FF000000">
 
-        <!-- Responsive 1024x768 desk canvas preserving exact coordinate transform in landscape & top-aligned in portrait -->
+        <!-- Full-bleed stretched desk canvas in BOTH landscape and portrait -->
         <FrameLayout
             android:id="@+id/deskCanvas"
             android:layout_width="match_parent"
@@ -25,32 +25,12 @@
                 android:scaleType="fitXY"
                 android:src="@drawable/background_desktop" />
 
-            <!-- 7 authentic desk objects positioned by DesktopActivity at exact base coords -->
+            <!-- 7 authentic desk objects mapped via relative coordinates [0..1] -->
             <FrameLayout
                 android:id="@+id/MainDesktopView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </FrameLayout>
-
-        <!-- Portrait phone quick-launch panel (hidden in landscape tablet mode!) -->
-        <ScrollView
-            android:id="@+id/portraitQuickPanel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/deskCanvas"
-            android:background="#FFF4F6F9"
-            android:visibility="gone">
-
-            <LinearLayout
-                android:id="@+id/portraitGridContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingLeft="14dp"
-                android:paddingTop="12dp"
-                android:paddingRight="14dp"
-                android:paddingBottom="44dp" />
-        </ScrollView>
 
         <!-- Authentic top-left menu button -->
         <ImageView
@@ -96,7 +76,7 @@
             android:shadowDx="1"
             android:shadowDy="1"
             android:shadowRadius="2"
-            android:text="v0.1.0"
+            android:text="v0.1.4"
             android:textColor="#EEFFFFFF"
             android:textSize="13sp" />
     </RelativeLayout>

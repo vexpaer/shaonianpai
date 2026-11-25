@@ -47,7 +47,7 @@
             android:scaleType="fitCenter"
             android:src="@drawable/fx_page_next" />
 
-        <!-- Top Bar Container (#179CD8 Foxit Sky Blue) -->
+        <!-- Top Bar Container (#179CD8 Foxit Sky Blue, clean single-line 48dp matching original) -->
         <LinearLayout
             android:id="@+id/pdfTopBarContainer"
             android:layout_width="match_parent"
@@ -58,7 +58,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:layout_height="48dp"
                 android:background="#FF179CD8"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -72,34 +72,30 @@
                     android:contentDescription="返回"
                     android:src="@drawable/ic_arrow_back_white_24dp" />
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvPdfTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="6dp"
                     android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="PDF 阅读与批注"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvPdfTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:singleLine="true"
-                        android:text="PDF 阅读与批注"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvPdfSubtitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:singleLine="true"
-                        android:text="福昕风格批注引擎 · 0 条批注"
-                        android:textColor="#DDF0FAFF"
-                        android:textSize="11sp" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvPdfSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:background="#26000000"
+                    android:paddingHorizontal="7dp"
+                    android:paddingVertical="2dp"
+                    android:text="0注"
+                    android:textColor="#EEFFFFFF"
+                    android:textSize="11sp" />
 
                 <ImageButton
                     android:id="@+id/btnBookmarkToggle"
@@ -126,7 +122,6 @@
                     android:id="@+id/btnExportPdf"
                     android:layout_width="wrap_content"
                     android:layout_height="34dp"
-                    android:layout_marginStart="2dp"
                     android:background="?attr/selectableItemBackground"
                     android:gravity="center"
                     android:paddingHorizontal="8dp"
@@ -137,14 +132,14 @@
 
                 <TextView
                     android:id="@+id/btnOpenExternal"
-                    android:layout_width="wrap_content"
+                    android:layout_width="34dp"
                     android:layout_height="34dp"
                     android:background="?attr/selectableItemBackground"
                     android:gravity="center"
-                    android:paddingHorizontal="8dp"
-                    android:text="外部"
+                    android:text="⋮"
                     android:textColor="#FFFFFFFF"
-                    android:textSize="13sp" />
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <ProgressBar
@@ -155,6 +150,69 @@
                 android:max="10000"
                 android:progress="0"
                 android:progressDrawable="@drawable/green_progressbar" />
+
+            <!-- Original Foxit GoToPage Bar (rd_gotopage_open.xml) -->
+            <LinearLayout
+                android:id="@+id/pdfGoToPageBar"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="#FF179CD8"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="32dp"
+                    android:layout_weight="1"
+                    android:background="#26000000"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="8dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/fx_search_small" />
+
+                    <EditText
+                        android:id="@+id/etGoToPage"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@android:color/transparent"
+                        android:hint="输入页码跳转..."
+                        android:imeOptions="actionGo"
+                        android:inputType="number"
+                        android:singleLine="true"
+                        android:textColor="#FFFFFFFF"
+                        android:textColorHint="#CCFFFFFF"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnGoToPageClear"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:gravity="center"
+                        android:text="✕"
+                        android:textColor="#DDFFFFFF"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/btnGoToPageConfirm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:gravity="center"
+                    android:paddingHorizontal="10dp"
+                    android:text="进行"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <!-- Expandable Full-Text Search Bar -->
             <LinearLayout
@@ -235,21 +293,23 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Page Badge Pill (clickable to jump page) -->
+        <!-- Authentic Bottom-Left Light Grey Page Pill (rd_gotopage_close.xml) -->
         <TextView
             android:id="@+id/tvPageBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/pdfTopBarContainer"
-            android:layout_alignParentEnd="true"
-            android:layout_marginTop="10dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/bg_fx_pill"
-            android:paddingHorizontal="12dp"
+            android:layout_above="@id/pdfBottomBar"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="18dp"
+            android:layout_marginBottom="14dp"
+            android:background="#E6E0E0E0"
+            android:elevation="2dp"
+            android:paddingHorizontal="14dp"
             android:paddingVertical="5dp"
-            android:text="第 1 / 1 页"
-            android:textColor="#FFFFFFFF"
-            android:textSize="12sp" />
+            android:text="1 / 1"
+            android:textColor="#FF424242"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <!-- Active Tool Prompt Pill (read_tool_set_bar_ly) -->
         <LinearLayout
@@ -744,6 +804,52 @@
                         android:textColor="#FF179CD8"
                         android:textSize="11sp"
                         android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnBarQuickPencil"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/fx_annot_pencil" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="铅笔"
+                        android:textColor="#FF424242"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/btnBarQuickHighlight"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/fx_annot_highlight" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="荧光笔"
+                        android:textColor="#FF424242"
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <LinearLayout

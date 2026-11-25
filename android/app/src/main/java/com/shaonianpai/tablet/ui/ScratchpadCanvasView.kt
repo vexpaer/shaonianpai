@@ -316,10 +316,12 @@ class ScratchpadCanvasView @JvmOverloads constructor(
             ScratchTool.PENCIL, ScratchTool.BRUSH -> {
                 when (event.actionMasked) {
                     MotionEvent.ACTION_DOWN -> {
+                        val fine = com.shaonianpai.tablet.data.UserProfileStore.getFinePenWidth(context)
+                        val thick = com.shaonianpai.tablet.data.UserProfileStore.getThickPenWidth(context)
                         liveStroke = ScratchStroke(
                             isText = false,
                             color = activeColor,
-                            width = if (activeTool == ScratchTool.BRUSH) 11f else 3.8f,
+                            width = if (activeTool == ScratchTool.BRUSH) thick else fine,
                             alpha = if (activeTool == ScratchTool.BRUSH) 190 else 255,
                             points = mutableListOf(nx to ny)
                         )

@@ -118,3 +118,20 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 30 | 书桌 + 全局悬浮快捷条展开（6 枚原版蓝框按钮） | `layout_questionbookbuttons.xml` | ![30](screenshots/30_floating_bar_expanded.png) |
 | 31 | 全功能多页草稿本（横线纸 + 右侧竖向工具条） | `activity_fingerdraw.xml` | ![31](screenshots/31_scratchpad_fingerdraw.png) |
 | 32 | 竖屏手机版悬浮快捷条展开 | `layout_questionbookbuttons.xml` | ![32](screenshots/32_portrait_floating_bar.png) |
+
+### 竖屏全铺书桌、一二级系统设置、任务详情内嵌 PDF 与 PDF 精修（`v0.1.4`）
+
+- **纯书桌横竖屏统一体验**：移除竖屏底部快捷卡片；桌面背景在横屏与竖屏均采用 `fitXY` 全屏拉伸铺满；7 件桌面物品均采用 `[0..1]` 归一化相对坐标持久化，横竖屏均可自由拖动且自动跟随屏幕尺寸定位，并实时响应「桌面显示图标」与用户资料设置。
+- **原版一级 + 二级系统设置（Master-Detail）**：复刻 `settings_headers.xml` 7 大原版分类（基本信息 / 界面与背景设置 / 手写笔设置 / 缓存设置 / 其它与服务器 / 关于与更新 / 系统设置）；横屏平板（`≥ 680dp`）双栏分屏，竖屏手机（`< 680dp`）一级列表点击进入二级详情页；新增相册选壁纸与预设壁纸、自定义相册/内置用户头像、用户名/学号/班级编辑、桌面图标多选显隐、细笔/粗笔粗细同步与分项缓存清理。
+- **任务详情页高精准复刻**：目录筛选抽屉还原至左侧（`START`）并配备类型 `Spinner` 筛选；PDF 卡片内直接内嵌可翻页的实时多页 PDF 阅读区（还原 `layout_customdocumentview.xml` 的 `fl_pdfcontent` + 右上角悬浮 `⛶ 全屏批注` 按钮与底部分页控制）；新增交互式随堂练习题与原版菜单「答案显示过滤」（不显示 / 只显示错题 / 全部显示）。
+- **福昕 PDF 阅读/批注页精修**：顶栏精简为原版 48dp `#179CD8` 单行布局（紧凑 `7注` 角标 + `⋮` 更多菜单）；左下角新增原版浅灰 `1 / 3` 页码胶囊（`rd_gotopage_close.xml`），点击展开原版天蓝顶部跳页条（`rd_gotopage_open.xml`）；底栏直接提供一键 `铅笔` 与 `荧光笔` 快捷入口，并自动同步设置页的用户名与手写笔粗细。
+
+| 序号 | 页面 | 对应原包布局 | 截图 |
+| --- | --- | --- | --- |
+| 33 | 竖屏纯书桌全屏拉伸（相对坐标 7 件物品） | `activity_desktop.xml` | ![33](screenshots/33_portrait_pure_stretched_desk.png) |
+| 34 | 横屏双栏设置 · 界面与背景设置 | `settings_headers.xml` + `settings_ui.xml` | ![34](screenshots/34_settings_2pane_ui.png) |
+| 35 | 横屏双栏设置 · 基本信息（头像/用户名/班级） | `settings_headers.xml` + `settings_user.xml` | ![35](screenshots/35_settings_2pane_user.png) |
+| 36 | 竖屏一级设置分类列表（点击进入二级页） | `settings_headers.xml` | ![36](screenshots/36_portrait_settings_level1.png) |
+| 37 | 任务详情页 · 内嵌多页 PDF 阅读器 + 全屏批注 | `activity_resourcesview2.xml` + `layout_customdocumentview.xml` | ![37](screenshots/37_task_detail_inline_pdf.png) |
+| 38 | 精修福昕 PDF 阅读器（48dp 顶栏 / 左下页码胶囊 / 铅笔荧光笔） | `rd_main_frame.xml` + `rd_gotopage_close.xml` | ![38](screenshots/38_pdf_foxit_refined_reading.png) |
+

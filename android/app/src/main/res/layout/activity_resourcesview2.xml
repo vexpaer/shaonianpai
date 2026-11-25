@@ -23,7 +23,7 @@
             app:title="任务详情"
             app:titleTextColor="#FFFFFF" />
 
-        <!-- Task summary banner -->
+        <!-- Task metadata & quick filter tabs -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,15 +62,17 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:background="#FFFFFFFF"
             android:clipToPadding="false"
-            android:paddingBottom="20dp" />
+            android:paddingBottom="24dp" />
     </LinearLayout>
 
-    <!-- Responsive end drawer matching layout_resourcestatistic.xml -->
+    <!-- Authentic START drawer matching activity_resourcesview2.xml + layout_resourcestatistic.xml -->
     <LinearLayout
-        android:layout_width="280dp"
+        android:id="@+id/leftStatDrawer"
+        android:layout_width="320dp"
         android:layout_height="match_parent"
-        android:layout_gravity="end"
+        android:layout_gravity="start"
         android:background="#FFFFFFFF"
         android:orientation="vertical">
 
@@ -80,14 +82,14 @@
             android:background="@color/drawerTopBg"
             android:orientation="vertical"
             android:paddingLeft="16dp"
-            android:paddingTop="24dp"
+            android:paddingTop="28dp"
             android:paddingRight="16dp"
-            android:paddingBottom="16dp">
+            android:paddingBottom="14dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="资源目录与学习统计"
+                android:text="题型与资料筛选"
                 android:textColor="@color/textPrimary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -96,11 +98,22 @@
                 android:id="@+id/tvStatSummary"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:text="共 4 份资料 · 已完成 75%"
                 android:textColor="@color/textSecondary"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
+
+            <Spinner
+                android:id="@+id/spinnerFilterType"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="8dp" />
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/separateLine" />
 
         <ListView
             android:id="@+id/listViewResource"

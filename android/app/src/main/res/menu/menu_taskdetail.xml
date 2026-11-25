@@ -2,15 +2,27 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_toggle_mode"
-        android:title="切换紧凑行"
-        app:showAsAction="ifRoom|withText" />
-    <item
         android:id="@+id/action_stats"
-        android:title="资料统计"
+        android:title="目录筛选"
         app:showAsAction="ifRoom|withText" />
     <item
         android:id="@+id/action_save"
         android:title="保存作答"
         app:showAsAction="ifRoom|withText" />
+    <item
+        android:id="@+id/action_answerfilter"
+        android:title="答案显示过滤"
+        app:showAsAction="never">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item android:id="@+id/action_noneanswer" android:title="不显示试题正确答案" />
+                <item android:id="@+id/action_wronganswer" android:title="仅显示做错试题的正确答案" />
+                <item android:id="@+id/action_allanswer" android:title="显示全部试题的正确答案" android:checked="true" />
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/action_toggle_mode"
+        android:title="切换紧凑行"
+        app:showAsAction="never" />
 </menu>

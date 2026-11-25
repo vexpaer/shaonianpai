@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFFFF"
+    android:background="#FFF5F7FA"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
@@ -13,194 +13,52 @@
         android:background="@color/primaryColor"
         android:elevation="4dp"
         android:theme="@style/ToolbarTheme"
-        app:title="系统设置"
+        app:title="设置"
         app:titleTextColor="#FFFFFF" />
 
-    <ScrollView
+    <!-- Responsive 1-Level (Headers) + 2-Level (Detail) Master-Detail Container -->
+    <LinearLayout
+        android:id="@+id/settingsSplitRoot"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <!-- GitHub Auto Update Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="软件更新（GitHub Releases）"
-                android:textColor="@color/primaryColor"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvCurrentVersion"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="当前版本：v0.1.0"
-                android:textColor="@color/textPrimary"
-                android:textSize="15sp" />
-
-            <Switch
-                android:id="@+id/swAutoUpdate"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:checked="true"
-                android:text="启动时自动检查 GitHub 新版本"
-                android:textSize="15sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="更新源仓库（owner/repo）"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp" />
-
-            <EditText
-                android:id="@+id/etGithubRepo"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="4dp"
-                android:hint="vexpaer/shaonianpai"
-                android:singleLine="true"
-                android:text="vexpaer/shaonianpai" />
+        <!-- Level 1: Category Headers List -->
+        <ScrollView
+            android:id="@+id/svLevel1Headers"
+            android:layout_width="296dp"
+            android:layout_height="match_parent"
+            android:background="#FFFFFFFF">
 
             <LinearLayout
+                android:id="@+id/llLevel1Headers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:paddingVertical="6dp" />
+        </ScrollView>
 
-                <Button
-                    android:id="@+id/btnCheckUpdate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="42dp"
-                    android:backgroundTint="@color/primaryColor"
-                    android:text="检查并安装更新"
-                    android:textColor="#FFFFFF" />
+        <View
+            android:id="@+id/vSettingsDivider"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#FFE0E0E0" />
 
-                <ProgressBar
-                    android:id="@+id/pbCheckUpdate"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginStart="12dp"
-                    android:visibility="gone" />
-            </LinearLayout>
+        <!-- Level 2: Detail Settings Pane -->
+        <ScrollView
+            android:id="@+id/svLevel2Detail"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#FFF7F9FC">
 
-            <TextView
-                android:id="@+id/tvUpdateStatus"
+            <LinearLayout
+                android:id="@+id/llLevel2Content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="提示：点击按钮将自动检查最新 GitHub Release 并支持一键下载安装 APK"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="18dp"
-                android:background="@color/separateLine" />
-
-            <!-- Desktop Icons Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="桌面图标"
-                android:textColor="@color/primaryColor"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <Switch
-                android:id="@+id/swLockIcons"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:checked="false"
-                android:text="锁定桌面图标（选中后不能随意移动桌面图标）"
-                android:textSize="15sp" />
-
-            <Switch
-                android:id="@+id/swFloatingBar"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:checked="true"
-                android:text="显示全局悬浮快捷条（收藏夹 / 截屏 / 拍照 / 草稿本）"
-                android:textSize="15sp" />
-
-            <Button
-                android:id="@+id/btnResetPositions"
-                android:layout_width="wrap_content"
-                android:layout_height="42dp"
-                android:layout_marginTop="6dp"
-                android:backgroundTint="@color/primaryColor"
-                android:text="还原默认图标位置"
-                android:textColor="#FFFFFF" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="18dp"
-                android:background="@color/separateLine" />
-
-            <!-- Server Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="主题与教师资料服务"
-                android:textColor="@color/primaryColor"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="界面主题：默认主题（深海蓝 #1976D2） / 天空蓝 / 梦幻紫"
-                android:textColor="@color/textSecondary"
-                android:textSize="14sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="教师资料服务地址"
-                android:textColor="@color/textPrimary"
-                android:textSize="15sp" />
-
-            <EditText
-                android:id="@+id/etServerUrl"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="6dp"
-                android:hint="http://10.0.2.2:8765"
-                android:singleLine="true"
-                android:text="http://10.0.2.2:8765" />
-
-            <Button
-                android:id="@+id/btnSaveServer"
-                android:layout_width="wrap_content"
-                android:layout_height="42dp"
-                android:layout_marginTop="8dp"
-                android:backgroundTint="@color/primaryColor"
-                android:text="保存并测试连接"
-                android:textColor="#FFFFFF" />
-
-            <TextView
-                android:id="@+id/tvConnectionStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="状态：已连接本地模拟后端（5 个学习任务，9 份测试附件）"
-                android:textColor="#2E7D32"
-                android:textSize="14sp" />
-        </LinearLayout>
-    </ScrollView>
+                android:orientation="vertical"
+                android:padding="18dp" />
+        </ScrollView>
+    </LinearLayout>
 </LinearLayout>

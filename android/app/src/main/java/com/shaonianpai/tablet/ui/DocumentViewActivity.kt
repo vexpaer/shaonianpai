@@ -166,11 +166,12 @@ class DocumentViewActivity : AppCompatActivity() {
     }
 
     private fun initToolDefaults() {
+        val finePen = com.shaonianpai.tablet.data.UserProfileStore.getFinePenWidth(this)
         for (t in AnnotTool.values()) {
             toolColors[t] = FoxitPalette.defaultColorFor(t)
             toolAlphas[t] = FoxitPalette.defaultAlphaFor(t)
             toolWidths[t] = when (t) {
-                AnnotTool.PENCIL -> 3f
+                AnnotTool.PENCIL -> finePen
                 AnnotTool.UNDERLINE, AnnotTool.SQUIGGLY, AnnotTool.STRIKEOUT -> 3f
                 else -> 4f
             }
@@ -237,7 +238,30 @@ class DocumentViewActivity : AppCompatActivity() {
             toggleBookmarkCurrentPage()
         }
 
+        val goToPageBar = findViewById<View>(R.id.pdfGoToPageBar)
+        val etGoToPage = findViewById<EditText>(R.id.etGoToPage)
+        fun executeGoToPage() {
+            val target = etGoToPage.text.toString().trim().toIntOrNull()
+            if (target != null && pageCount > 0) {
+                renderPage((target - 1).coerceIn(0, pageCount - 1))
+                goToPageBar.visibility = View.GONE
+            } else {
+                Toast.makeText(this, "请输入 1 - $pageCount 之间的页码", Toast.LENGTH_SHORT).show()
+            }
+        }
+        findViewById<View>(R.id.btnGoToPageClear).setOnClickListener {
+            if (etGoToPage.text.isNotEmpty()) etGoToPage.setText("") else goToPageBar.visibility = View.GONE
+        }
+        findViewById<View>(R.id.btnGoToPageConfirm).setOnClickListener { executeGoToPage() }
+        etGoToPage.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO) {
+                executeGoToPage()
+                true
+            } else false
+        }
+
         findViewById<View>(R.id.btnSearchToggle).setOnClickListener {
+            goToPageBar.visibility = View.GONE
             if (searchBar.visibility == View.VISIBLE) {
                 closeSearch()
             } else {
@@ -259,9 +283,48 @@ class DocumentViewActivity : AppCompatActivity() {
         findViewById<View>(R.id.btnSearchClose).setOnClickListener { closeSearch() }
 
         findViewById<View>(R.id.btnExportPdf).setOnClickListener { exportAnnotatedPdf() }
-        findViewById<View>(R.id.btnOpenExternal).setOnClickListener { openExternalPdf() }
+        findViewById<View>(R.id.btnOpenExternal).setOnClickListener {
+            val opts = arrayOf("导出带标准批注的 PDF", "用系统 APP 打开", "跳转到指定页", "查看文档信息")
+            AlertDialog.Builder(this)
+                .setTitle("文档操作")
+                .setItems(opts) { _, which ->
+                    when (which) {
+                        0 -> exportAnnotatedPdf()
+                        1 -> openExternalPdf()
+                        2 -> {
+                            searchBar.visibility = View.GONE
+                            goToPageBar.visibility = View.VISIBLE
+                            etGoToPage.setText("${currentPage + 1}")
+                            etGoToPage.requestFocus()
+                        }
+                        3 -> {
+                            AlertDialog.Builder(this)
+                                .setTitle("文档信息")
+                                .setMessage(
+                                    "标题：${asset.title}\n" +
+                                        "页数：共 $pageCount 页\n" +
+                                        "大小：${Repository.formatBytes(asset.bytes)}\n" +
+                                        "批注数：${docState.annotations.size} 条\n" +
+                                        "书签数：${docState.bookmarks.size} 个"
+                                )
+                                .setPositiveButton("确定", null)
+                                .show()
+                        }
+                    }
+                }
+                .show()
+        }
 
-        tvPageBadge.setOnClickListener { showPageJumpDialog() }
+        tvPageBadge.setOnClickListener {
+            searchBar.visibility = View.GONE
+            val show = goToPageBar.visibility != View.VISIBLE
+            goToPageBar.visibility = if (show) View.VISIBLE else View.GONE
+            if (show) {
+                etGoToPage.setText("${currentPage + 1}")
+                etGoToPage.selectAll()
+                etGoToPage.requestFocus()
+            }
+        }
         btnFloatPrev.setOnClickListener { navigatePage(-1) }
         btnFloatNext.setOnClickListener { navigatePage(1) }
 
@@ -295,6 +358,12 @@ class DocumentViewActivity : AppCompatActivity() {
             drawerLayout.openDrawer(GravityCompat.START)
         }
         findViewById<View>(R.id.btnBarEdit).setOnClickListener {
+            enterAnnotationMode(AnnotTool.HIGHLIGHT)
+        }
+        findViewById<View>(R.id.btnBarQuickPencil).setOnClickListener {
+            enterAnnotationMode(AnnotTool.PENCIL)
+        }
+        findViewById<View>(R.id.btnBarQuickHighlight).setOnClickListener {
             enterAnnotationMode(AnnotTool.HIGHLIGHT)
         }
         findViewById<View>(R.id.btnBarSetting).setOnClickListener {
@@ -970,7 +1039,7 @@ class DocumentViewActivity : AppCompatActivity() {
             pdfCanvas.pageTextIndex = pageTextCache[currentPage]
             pdfCanvas.searchHighlightRects = searchHits.filter { it.pageIndex == currentPage }.flatMap { it.rects }
 
-            tvPageBadge.text = "第 ${currentPage + 1} / ${r.pageCount} 页"
+            tvPageBadge.text = "${currentPage + 1} / ${r.pageCount}"
             progressBar.progress = (((currentPage + 1) * 10000f) / r.pageCount).toInt()
             btnFloatPrev.visibility = if (chromeVisible && currentPage > 0) View.VISIBLE else View.GONE
             btnFloatNext.visibility = if (chromeVisible && currentPage < r.pageCount - 1) View.VISIBLE else View.GONE
@@ -1116,9 +1185,8 @@ class DocumentViewActivity : AppCompatActivity() {
     }
 
     private fun updateSubtitle() {
-        val pageAnnots = docState.annotations.count { it.pageIndex == currentPage }
         val total = docState.annotations.size
-        tvPdfSubtitle.text = "福昕风格批注阅读 · 本页 $pageAnnots 条 / 共 $total 条批注"
+        tvPdfSubtitle.text = "${total}注"
     }
 
     private fun toggleBookmarkCurrentPage() {
@@ -1176,7 +1244,7 @@ class DocumentViewActivity : AppCompatActivity() {
             btnAddReply.setOnClickListener {
                 val txt = etReplyInput.text.toString().trim()
                 if (txt.isNotEmpty()) {
-                    annot.replies.add(ReplyItem("张明同学", txt))
+                    annot.replies.add(ReplyItem(com.shaonianpai.tablet.data.UserProfileStore.getUserName(this), txt))
                     annot.updatedAt = System.currentTimeMillis()
                     etReplyInput.setText("")
                     renderReplies()

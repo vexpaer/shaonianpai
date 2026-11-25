@@ -3,8 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-val resolvedVersionName = (project.findProperty("appVersionName") as String?) ?: "0.1.3"
-val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 103
+val resolvedVersionName = (project.findProperty("appVersionName") as String?) ?: "0.1.4"
+val resolvedVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 104
 
 val ksPath = System.getenv("RELEASE_KEYSTORE_PATH")
 val ksPassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
