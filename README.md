@@ -106,3 +106,15 @@ adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 | 27 | 三标签侧边抽屉（批注 / 目录 / 书签） | `panel_annot_topbar.xml` + `panel_annot_content.xml` | ![27](screenshots/27_pdf_foxit_side_panel.png) |
 | 28 | 原版淡黄 `#FFFBD9` 便签批注与回复弹窗 | `rd_note_dialog_edit.xml` | ![28](screenshots/28_pdf_foxit_note_dialog.png) |
 | 29 | 竖屏手机版福昕风格 PDF 批注 | `rd_main_frame.xml` | ![29](screenshots/29_portrait_pdf_foxit.png) |
+
+### 全局悬浮快捷条与多页草稿本基准截图（`v0.1.3`）
+
+基于原版 `MyQuestionBookService`、`layout_questionbookbuttons.xml`、`background_screen_questionbook.xml` 与 `activity_fingerdraw.xml` 100% 复用原图素材复刻：
+- **全局可拖动悬浮快捷条**：支持在任意学习页面拖动停靠（记住位置，可在设置页开关），点击主按钮展开 5 个高频工具：**收藏夹/试题本**、**当前页一键截屏收藏**、**相机拍照/相册选图收藏**、**多页草稿本**、**速记存入收藏夹**。
+- **全功能多页草稿本**：铅笔、粗笔、文字输入、橡皮擦（长按清空本页）、8 色调色板、6 种原版纸张背景（默认米黄 / 横线 / 网格 / 点点 / 竖线 / 白纸）、多页新建翻页持久化，以及一键保存至「草稿本存档 / 我的收藏夹」。
+
+| 序号 | 页面 | 对应原包布局 | 截图 |
+| --- | --- | --- | --- |
+| 30 | 书桌 + 全局悬浮快捷条展开（6 枚原版蓝框按钮） | `layout_questionbookbuttons.xml` | ![30](screenshots/30_floating_bar_expanded.png) |
+| 31 | 全功能多页草稿本（横线纸 + 右侧竖向工具条） | `activity_fingerdraw.xml` | ![31](screenshots/31_scratchpad_fingerdraw.png) |
+| 32 | 竖屏手机版悬浮快捷条展开 | `layout_questionbookbuttons.xml` | ![32](screenshots/32_portrait_floating_bar.png) |

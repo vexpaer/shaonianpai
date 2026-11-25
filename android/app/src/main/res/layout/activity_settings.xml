@@ -126,6 +126,14 @@
                 android:text="锁定桌面图标（选中后不能随意移动桌面图标）"
                 android:textSize="15sp" />
 
+            <Switch
+                android:id="@+id/swFloatingBar"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:checked="true"
+                android:text="显示全局悬浮快捷条（收藏夹 / 截屏 / 拍照 / 草稿本）"
+                android:textSize="15sp" />
+
             <Button
                 android:id="@+id/btnResetPositions"
                 android:layout_width="wrap_content"

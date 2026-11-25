@@ -81,6 +81,13 @@ class SettingsActivity : AppCompatActivity() {
             prefs.edit().putBoolean("LockIcons", isChecked).apply()
         }
 
+        val swFloatingBar = findViewById<Switch>(R.id.swFloatingBar)
+        swFloatingBar.isChecked = FloatingQuickBar.isEnabled(this)
+        swFloatingBar.setOnCheckedChangeListener { _, isChecked ->
+            FloatingQuickBar.setEnabled(this, isChecked)
+            FloatingQuickBar.attachIfNeeded(this)
+        }
+
         findViewById<Button>(R.id.btnResetPositions).setOnClickListener {
             val ed = prefs.edit()
             for (k in listOf("rewards", "clock", "schedule", "notebook", "study", "light", "bookbag")) {

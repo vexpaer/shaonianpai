@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
+        android:name=".ShaonianpaiApplication"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="少年派"
@@ -107,6 +108,21 @@
             android:label="设置"
             android:screenOrientation="fullUser"
             android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".ui.FingerDrawActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:label="草稿本"
+            android:screenOrientation="fullUser"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <activity
+            android:name=".ui.PhotoCaptureProxyActivity"
+            android:exported="false"
+            android:label="拍照收藏"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.AppCompat.Light.Dialog" />
 
     </application>
 </manifest>
