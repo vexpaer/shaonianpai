@@ -1,83 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/scheduleRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFFFF"
     android:orientation="vertical">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@color/primaryColor"
-        android:elevation="4dp"
-        android:theme="@style/ToolbarTheme"
-        app:title="日历 · 课程表（2021年第5周）"
-        app:titleTextColor="#FFFFFF" />
-
     <LinearLayout
         android:id="@+id/scheduleContainer"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:background="#FFFFFFFF"
         android:orientation="horizontal">
 
-        <!-- Weekly timetable grid -->
-        <ScrollView
-            android:id="@+id/scheduleTableScroll"
-            android:layout_width="0dp"
+        <!-- Left panel: Month mini-calendar + divider + day's tasks (matches 25_课程表.png) -->
+        <LinearLayout
+            android:id="@+id/scheduleLeftPanel"
+            android:layout_width="228dp"
             android:layout_height="match_parent"
-            android:layout_weight="2.2"
-            android:padding="10dp">
+            android:background="#FFFFFFFF"
+            android:orientation="vertical">
 
-            <TableLayout
-                android:id="@+id/tableSchedule"
+            <!-- Back + Month title row -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:paddingHorizontal="6dp">
+
+                <ImageButton
+                    android:id="@+id/btnScheduleBack"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="返回"
+                    android:padding="7dp"
+                    android:src="@drawable/ic_arrow_back_white_24dp"
+                    android:tint="#555555" />
+
+                <TextView
+                    android:id="@+id/tvMiniMonthTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:text="2026年11月"
+                    android:textColor="#212121"
+                    android:textSize="17sp" />
+            </RelativeLayout>
+
+            <!-- Mon..Sun weekday header -->
+            <LinearLayout
+                android:id="@+id/llMiniWeekHeader"
+                android:layout_width="match_parent"
+                android:layout_height="26dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="6dp" />
+
+            <!-- 6x7 Mini calendar grid -->
+            <LinearLayout
+                android:id="@+id/llMiniCalGrid"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:stretchColumns="1,2,3,4,5" />
-        </ScrollView>
+                android:orientation="vertical"
+                android:paddingHorizontal="4dp"
+                android:paddingBottom="6dp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E0E0E0" />
+
+            <!-- Selected day's task list -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:id="@+id/llDayTasks"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="10dp" />
+            </ScrollView>
+        </LinearLayout>
 
         <View
             android:id="@+id/scheduleDivider"
             android:layout_width="1dp"
             android:layout_height="match_parent"
-            android:background="@color/separateLine" />
+            android:background="#E0E0E0" />
 
-        <!-- Selected day's lesson materials -->
+        <!-- Right panel: Selected date title + 7x8 Timetable grid + bottom-right arrows -->
         <LinearLayout
-            android:id="@+id/scheduleDetailPanel"
+            android:id="@+id/scheduleRightPanel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="#FAFAFA"
-            android:orientation="vertical"
-            android:padding="12dp">
+            android:background="#FFFFFFFF"
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvSelectedLesson"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="周四 · 第2节 语文"
-                android:textColor="@color/primaryColor"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="8dp"
-                android:text="关联课堂资料与自主学习任务"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp" />
-
-            <ListView
-                android:id="@+id/lvLessonResources"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:divider="@color/separateLine"
-                android:dividerHeight="1dp" />
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="20dp">
+
+                <TextView
+                    android:id="@+id/tvScheduleDateTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="2026年11月26日"
+                    android:textColor="#424242"
+                    android:textSize="17sp" />
+
+                <TextView
+                    android:id="@+id/tvScheduleWeekHint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#757575"
+                    android:textSize="12.5sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llScheduleGridContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="14dp" />
+
+            <!-- Bottom week navigation arrows -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:background="#FFFFFFFF"
+                android:gravity="center_vertical|end"
+                android:orientation="horizontal"
+                android:paddingEnd="18dp">
+
+                <TextView
+                    android:id="@+id/btnPrevWeek"
+                    android:layout_width="44dp"
+                    android:layout_height="38dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:gravity="center"
+                    android:text="←"
+                    android:textColor="#424242"
+                    android:textSize="22sp" />
+
+                <TextView
+                    android:id="@+id/btnNextWeek"
+                    android:layout_width="44dp"
+                    android:layout_height="38dp"
+                    android:layout_marginStart="12dp"
+                    android:background="?android:attr/selectableItemBackgroundBorderless"
+                    android:gravity="center"
+                    android:text="→"
+                    android:textColor="#424242"
+                    android:textSize="22sp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

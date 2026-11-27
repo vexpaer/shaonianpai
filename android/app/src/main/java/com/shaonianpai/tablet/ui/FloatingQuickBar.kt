@@ -1,6 +1,7 @@
 package com.shaonianpai.tablet.ui
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -17,19 +18,20 @@ import com.shaonianpai.tablet.R
 import kotlin.math.abs
 
 /**
- * Recreates original MyQuestionBookService + layout_questionbookbuttons.xml:
- * - Icon-only blue-bordered rounded squares (#CCFFFFFF + 2dp #0066FF), NO text captions below icons.
- * - Expands into the 4 authentic quick tools: 收藏夹/试题本, 截屏收藏, 拍照收藏, 草稿本 (no 速记).
- * - Uses OnLayoutChangeListener + live container width/height so rotating landscape <-> portrait
- *   NEVER loses the button off-screen or traps it at a stale center boundary.
+ * Recreates original MyQuestionBookService + layout_questionbookbuttons.xml matching 02/05/18 screenshots:
+ * - Collapsed: single white rounded-square button with thin blue border & red notebook + arrows (qb_btn_expand) docked at right edge.
+ * - Expanded: expands into the 6 icon-only white/blue-bordered buttons horizontally (with NO text captions):
+ *   1) 收起 (qb_btn_expand)  2) 收藏夹/试题本 (qb_btn_notebook)  3) 拍照 (qb_btn_imagecapture)
+ *   4) 课堂投屏 (qb_btn_projector)  5) 截屏 (qb_btn_screencapture)  6) 草稿本/速算板 (qb_btn_freewrite)
+ * - Rotation-safe OnLayoutChangeListener + live width/height drag clamping.
  */
 object FloatingQuickBar {
 
     private const val OVERLAY_TAG = "shaonianpai_floating_quick_bar"
     private const val PREF_NAME = "shaonianpai_prefs"
     const val KEY_ENABLED = "FloatingQuickBarEnabled"
-    private const val KEY_POS_X = "fab_pos_x_norm"
-    private const val KEY_POS_Y = "fab_pos_y_norm"
+    private const val KEY_POS_X = "fab_pos_x_norm_v2"
+    private const val KEY_POS_Y = "fab_pos_y_norm_v2"
 
     fun isEnabled(ctx: Context): Boolean =
         ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, true)
@@ -41,7 +43,6 @@ object FloatingQuickBar {
 
     fun attachIfNeeded(activity: Activity) {
         if (activity is LoginActivity ||
-            activity is FingerDrawActivity ||
             activity is PhotoCaptureProxyActivity ||
             activity is VideoPlayerActivity
         ) return
@@ -81,44 +82,60 @@ object FloatingQuickBar {
             expanded = open
             expandStrip.visibility = if (open) View.VISIBLE else View.GONE
             barContainer.post {
-                val parentW = content.width.coerceAtLeast(1)
-                val maxX = (parentW - barContainer.width - dp(6)).coerceAtLeast(dp(6)).toFloat()
-                if (barContainer.x > maxX) barContainer.x = maxX
+                repositionFromNorm(activity, content, barContainer)
             }
         }
 
         fun collapse() = setExpanded(false)
 
-        // Authentic 4 icon-only expanded buttons (NO text captions, NO 速记)
-        val btnNotebook = makeIconOnlyButton(activity, R.drawable.qb_btn_notebook, "收藏夹") {
+        // Authentic 5 additional icon-only buttons beside main button (total 6 in row matching 05_悬浮球展开.png):
+        val btnNotebook = makeIconOnlyButton(activity, R.drawable.qb_btn_notebook, "收藏夹 / 试题本") {
             collapse()
             if (activity !is QuestionBookActivity) {
                 activity.startActivity(Intent(activity, QuestionBookActivity::class.java).apply {
                     putExtra("initial_tab", "favorites")
                 })
             } else {
-                Toast.makeText(activity, "当前已在收藏夹 / 试题本", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "当前已在我的试题本", Toast.LENGTH_SHORT).show()
             }
         }
-        val btnScreenshot = makeIconOnlyButton(activity, R.drawable.qb_btn_screencapture, "截屏") {
-            collapse()
-            captureCurrentScreen(activity, barContainer)
-        }
-        val btnCamera = makeIconOnlyButton(activity, R.drawable.qb_btn_imagecapture, "拍照") {
+        val btnCamera = makeIconOnlyButton(activity, R.drawable.qb_btn_imagecapture, "拍照收藏") {
             collapse()
             activity.startActivity(Intent(activity, PhotoCaptureProxyActivity::class.java))
         }
-        val btnScratchpad = makeIconOnlyButton(activity, R.drawable.qb_btn_freewrite, "草稿本") {
+        val btnProjector = makeIconOnlyButton(activity, R.drawable.qb_btn_projector, "无线投屏") {
             collapse()
-            activity.startActivity(Intent(activity, FingerDrawActivity::class.java))
+            AlertDialog.Builder(activity)
+                .setTitle("课堂无线投屏")
+                .setMessage("当前处于离线演示模式。\n连接教室局域网教师端后，点击此处可将平板画面实时推送至教室大屏，或接收教师板书投影。")
+                .setPositiveButton("打开白板演算") { _, _ ->
+                    if (activity !is FingerDrawActivity) {
+                        activity.startActivity(Intent(activity, FingerDrawActivity::class.java))
+                    }
+                }
+                .setNegativeButton("关闭", null)
+                .show()
+        }
+        val btnScreenshot = makeIconOnlyButton(activity, R.drawable.qb_btn_screencapture, "截屏收藏") {
+            collapse()
+            captureCurrentScreen(activity, barContainer)
+        }
+        val btnScratchpad = makeIconOnlyButton(activity, R.drawable.qb_btn_freewrite, "草稿本 / 自由批注") {
+            collapse()
+            if (activity !is FingerDrawActivity) {
+                activity.startActivity(Intent(activity, FingerDrawActivity::class.java))
+            } else {
+                Toast.makeText(activity, "当前已在草稿本", Toast.LENGTH_SHORT).show()
+            }
         }
 
         expandStrip.addView(btnNotebook)
-        expandStrip.addView(btnScreenshot)
         expandStrip.addView(btnCamera)
+        expandStrip.addView(btnProjector)
+        expandStrip.addView(btnScreenshot)
         expandStrip.addView(btnScratchpad)
 
-        // Main draggable expand/collapse button (icon-only, matching original layout_questionbookbuttons.xml)
+        // Main draggable toggle button (qb_btn_expand matching 02/05/18 screenshots)
         val btnMain = makeIconOnlyButton(activity, R.drawable.qb_btn_expand, "快捷工具", isMain = true) {}
 
         var downRawX = 0f
@@ -145,9 +162,9 @@ object FloatingQuickBar {
                     if (moved) {
                         val liveW = content.width.coerceAtLeast(1)
                         val liveH = content.height.coerceAtLeast(1)
-                        val maxX = (liveW - barContainer.width - dp(4)).coerceAtLeast(dp(4)).toFloat()
-                        val maxY = (liveH - barContainer.height - dp(4)).coerceAtLeast(dp(48)).toFloat()
-                        barContainer.x = (startX + dx).coerceIn(dp(4).toFloat(), maxX)
+                        val maxX = (liveW - barContainer.width - dp(6)).coerceAtLeast(dp(6)).toFloat()
+                        val maxY = (liveH - barContainer.height - dp(8)).coerceAtLeast(dp(48)).toFloat()
+                        barContainer.x = (startX + dx).coerceIn(dp(6).toFloat(), maxX)
                         barContainer.y = (startY + dy).coerceIn(dp(48).toFloat(), maxY)
                     }
                     true
@@ -161,7 +178,7 @@ object FloatingQuickBar {
                         val liveH = content.height
                         if (liveW > 0 && liveH > 0) {
                             activity.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE).edit()
-                                .putFloat(KEY_POS_X, (barContainer.x / liveW).coerceIn(0f, 0.95f))
+                                .putFloat(KEY_POS_X, (barContainer.x / liveW).coerceIn(0f, 0.98f))
                                 .putFloat(KEY_POS_Y, (barContainer.y / liveH).coerceIn(0f, 0.95f))
                                 .apply()
                         }
@@ -172,6 +189,7 @@ object FloatingQuickBar {
             }
         }
 
+        // Order left-to-right: main toggle button + 5 expanded tool buttons (= 6 buttons total!)
         barContainer.addView(btnMain)
         barContainer.addView(expandStrip)
 
@@ -181,7 +199,6 @@ object FloatingQuickBar {
         )
         content.addView(barContainer, lp)
 
-        // Automatically keep floating bar strictly inside visible bounds on EVERY orientation/size change!
         var lastW = -1
         var lastH = -1
         content.addOnLayoutChangeListener { _, l, t, r, b, _, _, _, _ ->
@@ -197,8 +214,6 @@ object FloatingQuickBar {
         barContainer.post {
             repositionFromNorm(activity, content, barContainer)
             if (activity.intent.getBooleanExtra("demo_expand_fab", false)) {
-                barContainer.x = dp(10).toFloat()
-                barContainer.y = (content.height - dp(120)).coerceAtLeast(dp(72)).toFloat()
                 setExpanded(true)
             }
         }
@@ -211,13 +226,14 @@ object FloatingQuickBar {
         val d = activity.resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
         val prefs = activity.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        val normX = prefs.getFloat(KEY_POS_X, 0.015f).coerceIn(0f, 0.95f)
-        val normY = prefs.getFloat(KEY_POS_Y, 0.78f).coerceIn(0f, 0.95f)
+        // Default docked on right-middle edge (02_主桌面.png / 10_草稿本.png / 20_自主学习.png)
+        val normX = prefs.getFloat(KEY_POS_X, 0.94f).coerceIn(0f, 0.98f)
+        val normY = prefs.getFloat(KEY_POS_Y, 0.56f).coerceIn(0f, 0.95f)
         val bw = bar.width.coerceAtLeast(dp(46))
         val bh = bar.height.coerceAtLeast(dp(46))
-        val maxX = (cw - bw - dp(6)).coerceAtLeast(dp(6)).toFloat()
-        val maxY = (ch - bh - dp(8)).coerceAtLeast(dp(56)).toFloat()
-        bar.x = (normX * cw).coerceIn(dp(6).toFloat(), maxX)
+        val maxX = (cw - bw - dp(8)).coerceAtLeast(dp(8)).toFloat()
+        val maxY = (ch - bh - dp(10)).coerceAtLeast(dp(56)).toFloat()
+        bar.x = (normX * cw).coerceIn(dp(8).toFloat(), maxX)
         bar.y = (normY * ch).coerceIn(dp(56).toFloat(), maxY)
     }
 
@@ -237,7 +253,7 @@ object FloatingQuickBar {
             contentDescription = desc
             scaleType = ImageView.ScaleType.FIT_CENTER
             setBackgroundResource(R.drawable.bg_screen_questionbook)
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setPadding(dp(7), dp(7), dp(7), dp(7))
             layoutParams = LinearLayout.LayoutParams(btnSize, btnSize).apply {
                 marginEnd = dp(5)
             }

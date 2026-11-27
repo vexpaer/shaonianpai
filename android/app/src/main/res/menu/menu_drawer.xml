@@ -22,14 +22,17 @@
             android:icon="@drawable/ic_exit_to_app_black_36dp"
             android:title="登出" />
     </group>
+    <!-- Authentic 04_左侧抽屉_功能入口.png: pure text items under 「功能」 with NO icons -->
     <item android:title="功能">
         <menu>
-            <item android:id="@+id/nav_selflearn" android:icon="@drawable/ic_ruiyicloud_selflearn" android:title="自主学习" />
-            <item android:id="@+id/nav_library" android:icon="@drawable/ic_folder" android:title="我的资源库" />
-            <item android:id="@+id/nav_questionbook" android:icon="@drawable/qb_btn_notebook" android:title="收藏夹 / 试题本" />
-            <item android:id="@+id/nav_apps" android:icon="@drawable/ic_appsfolder" android:title="软件与应用入口" />
-            <item android:id="@+id/nav_schedule" android:icon="@drawable/ic_desktop_schedule" android:title="日历 / 课程表" />
-            <item android:id="@+id/nav_bookdetail" android:icon="@drawable/ic_pdf" android:title="电子教材详情" />
+            <item android:id="@+id/nav_schedule" android:title="日历" />
+            <item android:id="@+id/nav_selflearn" android:title="自主学习" />
+            <item android:id="@+id/nav_library" android:title="我的资源库" />
+            <item android:id="@+id/nav_questionbook" android:title="我的试题本" />
+            <item android:id="@+id/nav_apps" android:title="书包" />
+            <item android:id="@+id/nav_clock" android:title="时钟" />
+            <item android:id="@+id/nav_rewards" android:title="我收到的奖励" />
+            <item android:id="@+id/nav_brightness" android:title="亮度设置" />
         </menu>
     </item>
 </menu>

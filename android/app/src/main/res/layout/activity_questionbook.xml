@@ -2,14 +2,14 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFF5F7FA"
+    android:background="#FFFFFFFF"
     android:orientation="vertical">
 
-    <!-- Top bar faithful to original activity_questionbook.xml: Back + SpinnerBooks + Tag chips + Filter/View + Search -->
+    <!-- Top bar faithful to 23_我的试题本.png: Back + SpinnerBooks + 标签 [orange pill] + Grid/Wrench/Search -->
     <LinearLayout
         android:id="@+id/qbTopBar"
         android:layout_width="match_parent"
-        android:layout_height="54dp"
+        android:layout_height="52dp"
         android:background="@color/primaryColor"
         android:elevation="4dp"
         android:gravity="center_vertical"
@@ -19,8 +19,8 @@
 
         <ImageButton
             android:id="@+id/btnBack"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="返回"
             android:src="@drawable/ic_arrow_back_white_24dp" />
@@ -29,8 +29,27 @@
             android:id="@+id/spinnerBooks"
             android:layout_width="wrap_content"
             android:layout_height="40dp"
-            android:minWidth="124dp"
+            android:minWidth="112dp"
             android:popupBackground="#FFFFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="6dp"
+            android:text="标签"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvTopActiveTagPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="3dp"
+            android:text="全部"
+            android:textColor="#FFFFFFFF"
+            android:textSize="13sp" />
 
         <View
             android:layout_width="0dp"
@@ -39,31 +58,31 @@
 
         <ImageButton
             android:id="@+id/btnToggleGrid"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="切换列表或网格"
-            android:padding="8dp"
+            android:padding="7dp"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_grid_white" />
 
         <ImageButton
             android:id="@+id/btnFilterMenu"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="分组与筛选"
-            android:padding="8dp"
+            android:padding="7dp"
             android:scaleType="fitCenter"
             android:src="@android:drawable/ic_menu_manage" />
 
         <ImageButton
             android:id="@+id/btnSearchToggle"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="搜索"
-            android:padding="8dp"
+            android:padding="7dp"
             android:scaleType="fitCenter"
             android:src="@android:drawable/ic_menu_search" />
     </LinearLayout>
@@ -104,13 +123,14 @@
             android:textSize="13sp" />
     </LinearLayout>
 
-    <!-- Interactive Tag Filter Bar (TagsContent in original activity_questionbook.xml) -->
+    <!-- Interactive Tag Filter Bar (collapsible via top orange pill or shown inline) -->
     <HorizontalScrollView
+        android:id="@+id/hsvTagBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFFFF"
-        android:elevation="1dp"
-        android:scrollbars="none">
+        android:scrollbars="none"
+        android:visibility="gone">
 
         <LinearLayout
             android:id="@+id/llTagsContent"
@@ -125,7 +145,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#FFE4E8EE" />
+        android:background="#FFCCCCCC" />
 
     <!-- Responsive SplitView: horizontal on tablet landscape, vertical on portrait phone -->
     <LinearLayout

@@ -1,18 +1,29 @@
 package com.shaonianpai.tablet.ui
 
 import android.app.AlertDialog
+import android.app.Dialog
+import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
+import android.graphics.SweepGradient
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
+import android.view.inputmethod.EditorInfo
+import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.ScrollView
-import android.widget.SeekBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.shaonianpai.tablet.R
@@ -20,30 +31,31 @@ import com.shaonianpai.tablet.data.UserProfileStore
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import kotlin.math.atan2
+import kotlin.math.hypot
 
 /**
- * Recreates original FingerDrawActivity / 草稿本:
- * - Clean full-bleed default yellow ruled legal-pad canvas (NO top-left text, NO bottom page bar).
- * - Right-side vertical toolbar without thick brush or back button:
- *   铅笔, 文字, 橡皮 (silent pen-style pixel eraser, long-press to clear), 调色板 (full palette dialog, no preview dot),
- *   纸张背景 (crisp lined-paper icon), 撤销, 重做, 收藏.
+ * Faithfully recreates original FingerDrawActivity2 (screenshots 10–18) with user preferences:
+ * - Default yellow ruled legal-pad canvas; NO "第1题" badge, NO bottom page counter.
+ * - Right-side solid blue vertical strip with the exact 8 icon-only white line-art buttons:
+ *   1. 毛笔 (Brush)
+ *   2. 铅笔 (Pencil)
+ *   3. 文字输入 ("文" -> toggles bottom cyan-bordered multiline input bar matching 13_草稿本_文字输入框.png)
+ *   4. 橡皮擦 (Silent pixel-level eraser; long-press to clear)
+ *   5. 调色板 (White dialog with HSV rainbow color wheel + brightness bar matching 15_草稿本_调色盘.png)
+ *   6. 图形工具 (Triangle ruler -> straight line / rect / triangle / circle; long-press chooses shape)
+ *   7. 旋转画布 (90° rotation -> centered vertical yellow strip on #808080 backdrop matching 11_草稿本_旋转后竖线纸.png)
+ *   8. 自适应 / 更多 (Fit frame -> opens quick sheet for 纸张样式 / 撤销 / 重做 / 收藏)
  */
 class FingerDrawActivity : AppCompatActivity() {
 
     private lateinit var canvasView: ScratchpadCanvasView
     private lateinit var llRightTools: LinearLayout
+    private lateinit var textInputBar: EditText
 
     private val strokes = mutableListOf<ScratchStroke>()
     private val toolButtons = mutableMapOf<ScratchTool, View>()
-
-    private val paletteColors = listOf(
-        Color.parseColor("#212121"), Color.parseColor("#1A237E"), Color.parseColor("#0D47A1"), Color.parseColor("#1976D2"),
-        Color.parseColor("#00838F"), Color.parseColor("#2E7D32"), Color.parseColor("#558B2F"), Color.parseColor("#F9A825"),
-        Color.parseColor("#EF6C00"), Color.parseColor("#D84315"), Color.parseColor("#D32F2F"), Color.parseColor("#C2185B"),
-        Color.parseColor("#7B1FA2"), Color.parseColor("#512DA8"), Color.parseColor("#4E342E"), Color.parseColor("#546E7A"),
-        Color.parseColor("#616161"), Color.parseColor("#0288D1"), Color.parseColor("#00897B"), Color.parseColor("#43A047"),
-        Color.parseColor("#FB8C00"), Color.parseColor("#E53935"), Color.parseColor("#8E24AA"), Color.parseColor("#FFFFFF")
-    )
+    private var btnRotateView: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,17 +65,29 @@ class FingerDrawActivity : AppCompatActivity() {
         }
         buildLayout()
         canvasView.setPageStrokes(strokes)
+        if (intent.getBooleanExtra("demo_show_color_wheel", false)) {
+            llRightTools.post { showColorWheelDialog() }
+        }
+        if (intent.getBooleanExtra("demo_rotated", false)) {
+            canvasView.isRotatedPortraitPaper = true
+            selectTool(ScratchTool.TEXT)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        FloatingQuickBar.attachIfNeeded(this)
     }
 
     private fun buildLayout() {
         val d = resources.displayMetrics.density
         fun dp(v: Int) = (v * d).toInt()
 
-        val root = android.widget.RelativeLayout(this).apply {
+        val root = RelativeLayout(this).apply {
             setBackgroundColor(Color.parseColor("#808080"))
         }
 
-        // Right-side vertical toolbar matching activity_fingerdraw.xml
+        // Right-side vertical blue toolbar matching 10_草稿本_默认横线纸.png (8 icon-only buttons)
         val scrollRight = ScrollView(this).apply {
             id = View.generateViewId()
             setBackgroundColor(UserProfileStore.getThemePrimaryColor(this@FingerDrawActivity))
@@ -72,46 +96,74 @@ class FingerDrawActivity : AppCompatActivity() {
         llRightTools = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(4), dp(8), dp(4), dp(12))
+            setPadding(dp(4), dp(8), dp(4), dp(10))
         }
         scrollRight.addView(llRightTools)
 
-        val rightParams = android.widget.RelativeLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.MATCH_PARENT).apply {
-            addRule(android.widget.RelativeLayout.ALIGN_PARENT_END)
+        val rightParams = RelativeLayout.LayoutParams(dp(52), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+            addRule(RelativeLayout.ALIGN_PARENT_END)
         }
         root.addView(scrollRight, rightParams)
 
-        // Full-bleed scratchpad canvas (NO top-left badge, NO bottom page bar!)
         canvasView = ScratchpadCanvasView(this).apply {
             paperBackground = PaperBackground.DEFAULT
             onStrokesChanged = { saveScratchpad() }
-            onRequestTextAt = { nx, ny -> promptTextAt(nx, ny) }
+            onRequestTextAt = { nx, ny -> stampInputTextAt(nx, ny) }
         }
-        val canvasParams = android.widget.RelativeLayout.LayoutParams(
+        val canvasParams = RelativeLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         ).apply {
-            addRule(android.widget.RelativeLayout.START_OF, scrollRight.id)
+            addRule(RelativeLayout.START_OF, scrollRight.id)
         }
         root.addView(canvasView, canvasParams)
 
+        // Authentic bottom cyan/blue-bordered multiline input bar matching 13_草稿本_文字输入框.png
+        textInputBar = EditText(this).apply {
+            visibility = View.GONE
+            hint = "在这里输入文字，支持多行。点击画布任意位置即可放置。"
+            setTextColor(Color.parseColor("#212121"))
+            setHintTextColor(Color.parseColor("#757575"))
+            textSize = 15f
+            maxLines = 4
+            setPadding(dp(12), dp(10), dp(12), dp(10))
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                setStroke(dp(2), Color.parseColor("#00AEEF"))
+            }
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    stampInputTextAt(0.18f, 0.25f)
+                    true
+                } else false
+            }
+        }
+        val inputParams = RelativeLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
+            addRule(RelativeLayout.START_OF, scrollRight.id)
+            addRule(RelativeLayout.ALIGN_PARENT_BOTTOM)
+            setMargins(dp(4), 0, dp(2), dp(4))
+        }
+        root.addView(textInputBar, inputParams)
+
         populateRightToolbar()
         setContentView(root)
-        selectTool(ScratchTool.PENCIL)
+        selectTool(ScratchTool.BRUSH)
     }
 
     private fun populateRightToolbar() {
         llRightTools.removeAllViews()
         toolButtons.clear()
 
-        // Authentic right toolbar: NO thick brush, NO back button!
-        val pencilBtn = makeSideBtn("铅笔", R.drawable.fd_ic_pencil, null) { selectTool(ScratchTool.PENCIL) }
-        val textBtn = makeSideBtn("文字", R.drawable.fd_ic_text, null) { selectTool(ScratchTool.TEXT) }
-        val eraserBtn = makeSideBtn("橡皮", R.drawable.fd_ic_eraser, null) {
-            // Silent selection — pen-style pixel eraser with NO toast popup!
-            selectTool(ScratchTool.ERASER)
-        }
-        eraserBtn.setOnLongClickListener {
+        // 8 authentic white line-art icons (NO labels under icons matching 10_草稿本_默认横线纸.png)
+        val btnBrush = makeIconBtn(R.drawable.fd_vec_brush, "毛笔") { selectTool(ScratchTool.BRUSH) }
+        val btnPencil = makeIconBtn(R.drawable.fd_vec_pencil, "铅笔") { selectTool(ScratchTool.PENCIL) }
+        val btnText = makeIconBtn(R.drawable.fd_vec_text, "文字输入") { selectTool(ScratchTool.TEXT) }
+        val btnEraser = makeIconBtn(R.drawable.fd_vec_eraser, "橡皮擦") { selectTool(ScratchTool.ERASER) }
+        btnEraser.setOnLongClickListener {
             AlertDialog.Builder(this)
                 .setTitle("清空草稿纸")
                 .setMessage("确定要清除当前全部笔迹吗？（可通过撤销恢复）")
@@ -121,225 +173,320 @@ class FingerDrawActivity : AppCompatActivity() {
             true
         }
 
-        toolButtons[ScratchTool.PENCIL] = pencilBtn
-        toolButtons[ScratchTool.TEXT] = textBtn
-        toolButtons[ScratchTool.ERASER] = eraserBtn
+        val btnColorize = makeIconBtn(R.drawable.fd_vec_palette, "调色板") { showColorWheelDialog() }
+        val btnGraphics = makeIconBtn(R.drawable.fd_vec_ruler, "图形工具") { selectTool(ScratchTool.SHAPE) }
+        btnGraphics.setOnLongClickListener {
+            showShapePickerDialog()
+            true
+        }
+        val btnRotate = makeIconBtn(R.drawable.fd_vec_rotate, "旋转画布") {
+            canvasView.isRotatedPortraitPaper = !canvasView.isRotatedPortraitPaper
+            btnRotateView?.alpha = if (canvasView.isRotatedPortraitPaper) 1f else 0.92f
+        }
+        btnRotateView = btnRotate
+        val btnBestFit = makeIconBtn(R.drawable.fd_vec_bestfit, "自适应与更多") {
+            showMoreActionsDialog()
+        }
 
-        llRightTools.addView(pencilBtn)
-        llRightTools.addView(textBtn)
-        llRightTools.addView(eraserBtn)
+        toolButtons[ScratchTool.BRUSH] = btnBrush
+        toolButtons[ScratchTool.PENCIL] = btnPencil
+        toolButtons[ScratchTool.TEXT] = btnText
+        toolButtons[ScratchTool.ERASER] = btnEraser
+        toolButtons[ScratchTool.SHAPE] = btnGraphics
 
-        // Color Palette button (NO preview dot under icon; opens rich palette dialog)
-        llRightTools.addView(makeSideBtn("调色板", R.drawable.fd_ic_colorize, null) { showColorPaletteDialog() })
-
-        // Paper background selector with proper lined-paper icon
-        llRightTools.addView(makeSideBtn("纸张", R.drawable.fd_ic_paper_bg, null) { showPaperBackgroundDialog() })
-
-        // Undo / Redo
-        llRightTools.addView(makeSideBtn("撤销", R.drawable.fx_annot_undo, Color.WHITE) { canvasView.undo() })
-        llRightTools.addView(makeSideBtn("重做", R.drawable.fx_annot_redo, Color.WHITE) { canvasView.redo() })
-
-        // Save to Favorites
-        llRightTools.addView(makeSideBtn("收藏", R.drawable.qb_btn_notebook, null) {
-            val bmp = canvasView.exportToBitmap()
-            AddToQuestionBookDialog.show(
-                activity = this,
-                sourceType = "SCRATCHPAD",
-                defaultTitle = "草稿本笔记",
-                defaultBook = "草稿本存档",
-                defaultTag = "草稿",
-                bitmap = bmp
-            )
-        })
+        llRightTools.addView(btnBrush)
+        llRightTools.addView(btnPencil)
+        llRightTools.addView(btnText)
+        llRightTools.addView(btnEraser)
+        llRightTools.addView(btnColorize)
+        llRightTools.addView(btnGraphics)
+        llRightTools.addView(btnRotate)
+        llRightTools.addView(btnBestFit)
     }
 
     private fun selectTool(tool: ScratchTool) {
         canvasView.activeTool = tool
+        textInputBar.visibility = if (tool == ScratchTool.TEXT) View.VISIBLE else View.GONE
         toolButtons.forEach { (t, view) ->
             view.background = if (t == tool) {
                 GradientDrawable().apply {
-                    setColor(Color.parseColor("#44FFFFFF"))
+                    setColor(Color.parseColor("#33FFFFFF"))
                     setStroke(dp(1), Color.WHITE)
-                    cornerRadius = dp(8).toFloat()
+                    cornerRadius = dp(4).toFloat()
                 }
             } else null
         }
     }
 
-    private fun makeSideBtn(label: String, iconRes: Int, tint: Int?, onClick: () -> Unit): View {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            setPadding(dp(4), dp(8), dp(4), dp(8))
-            layoutParams = LinearLayout.LayoutParams(dp(48), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(4)
+    private fun makeIconBtn(iconRes: Int, desc: String, onClick: () -> Unit): View {
+        val d = resources.displayMetrics.density
+        val size = (42 * d).toInt()
+        val pad = (8 * d).toInt()
+        return ImageView(this).apply {
+            setImageResource(iconRes)
+            contentDescription = desc
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setPadding(pad, pad, pad, pad)
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                bottomMargin = (4 * d).toInt()
             }
-            addView(ImageView(this@FingerDrawActivity).apply {
-                setImageResource(iconRes)
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                if (tint != null) setColorFilter(tint)
-                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26))
-            })
-            addView(TextView(this@FingerDrawActivity).apply {
-                text = label
-                textSize = 10f
-                setTextColor(Color.WHITE)
-                gravity = Gravity.CENTER
-                setPadding(0, dp(2), 0, 0)
-            })
             setOnClickListener { onClick() }
         }
     }
 
-    /** Full interactive color palette + RGB tuner + stroke thickness dialog */
-    private fun showColorPaletteDialog() {
-        var pickedColor = canvasView.activeColor
-        var pickedWidth = canvasView.activeStrokeWidth
-
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(14), dp(18), dp(8))
+    private fun stampInputTextAt(nx: Float, ny: Float) {
+        val pending = textInputBar.text?.toString()?.trim().orEmpty()
+        if (pending.isNotBlank()) {
+            canvasView.addTextStroke(nx, ny, pending)
+            textInputBar.setText("")
+            return
         }
-
-        val previewStrip = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(34)).apply {
-                bottomMargin = dp(12)
-            }
-            background = GradientDrawable().apply {
-                setColor(pickedColor)
-                setStroke(dp(1), Color.parseColor("#BDBDBD"))
-                cornerRadius = dp(6).toFloat()
-            }
+        val et = EditText(this).apply {
+            hint = "在这里输入文字，支持多行"
+            minLines = 2
+            setPadding(dp(14), dp(10), dp(14), dp(10))
         }
-        root.addView(previewStrip)
-
-        // 24-color 6x4 swatch grid
-        val swatchViews = mutableListOf<Pair<Int, View>>()
-        fun refreshPreview() {
-            (previewStrip.background as? GradientDrawable)?.setColor(pickedColor)
-            swatchViews.forEach { (c, v) ->
-                (v.background as? GradientDrawable)?.setStroke(
-                    if (c == pickedColor) dp(3) else dp(1),
-                    if (c == pickedColor) Color.parseColor("#1976D2") else Color.parseColor("#CCCCCC")
-                )
-            }
-        }
-
-        val cols = 6
-        for (rowIdx in 0 until (paletteColors.size + cols - 1) / cols) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                    bottomMargin = dp(8)
-                }
-            }
-            for (cIdx in 0 until cols) {
-                val idx = rowIdx * cols + cIdx
-                if (idx >= paletteColors.size) break
-                val color = paletteColors[idx]
-                val sw = View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply {
-                        marginStart = dp(4)
-                        marginEnd = dp(4)
-                    }
-                    background = GradientDrawable().apply {
-                        shape = GradientDrawable.OVAL
-                        setColor(color)
-                        setStroke(dp(1), Color.parseColor("#CCCCCC"))
-                    }
-                }
-                swatchViews.add(color to sw)
-                row.addView(sw)
-            }
-            root.addView(row)
-        }
-
-        // RGB Fine Tuning Sliders
-        val tvR = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#D32F2F")) }
-        val tvG = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#2E7D32")) }
-        val tvB = TextView(this).apply { textSize = 12f; setTextColor(Color.parseColor("#1976D2")) }
-        val sbR = SeekBar(this).apply { max = 255 }
-        val sbG = SeekBar(this).apply { max = 255 }
-        val sbB = SeekBar(this).apply { max = 255 }
-
-        fun syncSlidersFromColor() {
-            sbR.progress = Color.red(pickedColor)
-            sbG.progress = Color.green(pickedColor)
-            sbB.progress = Color.blue(pickedColor)
-            tvR.text = "红 (R): ${sbR.progress}"
-            tvG.text = "绿 (G): ${sbG.progress}"
-            tvB.text = "蓝 (B): ${sbB.progress}"
-            refreshPreview()
-        }
-
-        swatchViews.forEach { (color, sw) ->
-            sw.setOnClickListener {
-                pickedColor = color
-                syncSlidersFromColor()
-            }
-        }
-
-        val rgbListener = object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    pickedColor = Color.rgb(sbR.progress, sbG.progress, sbB.progress)
-                    tvR.text = "红 (R): ${sbR.progress}"
-                    tvG.text = "绿 (G): ${sbG.progress}"
-                    tvB.text = "蓝 (B): ${sbB.progress}"
-                    refreshPreview()
-                }
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-        }
-        sbR.setOnSeekBarChangeListener(rgbListener)
-        sbG.setOnSeekBarChangeListener(rgbListener)
-        sbB.setOnSeekBarChangeListener(rgbListener)
-
-        root.addView(tvR)
-        root.addView(sbR)
-        root.addView(tvG)
-        root.addView(sbG)
-        root.addView(tvB)
-        root.addView(sbB)
-
-        // Pen thickness slider
-        val tvW = TextView(this).apply {
-            text = "画笔粗细：${pickedWidth.toInt()} px"
-            textSize = 12.5f
-            setTextColor(Color.parseColor("#424242"))
-            setPadding(0, dp(8), 0, dp(2))
-        }
-        val sbW = SeekBar(this).apply {
-            max = 14
-            progress = (pickedWidth.toInt() - 1).coerceIn(0, 14)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    pickedWidth = (progress + 1).toFloat()
-                    tvW.text = "画笔粗细：${pickedWidth.toInt()} px"
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-            })
-        }
-        root.addView(tvW)
-        root.addView(sbW)
-
-        syncSlidersFromColor()
-
-        val sv = ScrollView(this).apply { addView(root) }
         AlertDialog.Builder(this)
-            .setTitle("调色板")
-            .setView(sv)
-            .setPositiveButton("确定") { _, _ ->
-                canvasView.activeColor = pickedColor
-                canvasView.activeStrokeWidth = pickedWidth
+            .setTitle("文字输入")
+            .setView(et)
+            .setPositiveButton("添加") { _, _ ->
+                canvasView.addTextStroke(nx, ny, et.text.toString())
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    /** Authentic white card HSV Color Wheel + Value gradient bar dialog matching 15_草稿本_调色盘.png */
+    private fun showColorWheelDialog() {
+        val dlg = Dialog(this)
+        dlg.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dlg.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        val hsv = floatArrayOf(230f, 0.85f, 0.55f)
+        Color.colorToHSV(canvasView.activeColor, hsv)
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(22), dp(24), dp(16))
+            background = GradientDrawable().apply {
+                setColor(Color.WHITE)
+                cornerRadius = dp(4).toFloat()
+            }
+            elevation = dp(10).toFloat()
+        }
+
+        lateinit var valueBar: BrightnessGradientView
+        val preview = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(14)).apply { bottomMargin = dp(10) }
+            background = GradientDrawable().apply {
+                setColor(Color.HSVToColor(hsv))
+                setStroke(dp(1), Color.parseColor("#CCCCCC"))
+                cornerRadius = dp(3).toFloat()
+            }
+        }
+        fun syncPreview() {
+            (preview.background as? GradientDrawable)?.setColor(Color.HSVToColor(hsv))
+        }
+
+        val wheel = RainbowRingView(this, hsv) { hue, sat ->
+            hsv[0] = hue
+            hsv[1] = sat
+            valueBar.setBaseHueSat(hue, sat)
+            syncPreview()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(dp(190), dp(190)).apply {
+                bottomMargin = dp(16)
+            }
+        }
+
+        valueBar = BrightnessGradientView(this, hsv) { valComp ->
+            hsv[2] = valComp
+            syncPreview()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(dp(190), dp(28)).apply {
+                bottomMargin = dp(14)
+            }
+        }
+
+        val btnRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(dp(190), ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        val btnCancel = Button(this, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "取消"
+            setTextColor(Color.parseColor("#666666"))
+            setOnClickListener { dlg.dismiss() }
+        }
+        val btnOk = Button(this, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "确定"
+            setTextColor(UserProfileStore.getThemePrimaryColor(this@FingerDrawActivity))
+            setOnClickListener {
+                canvasView.activeColor = Color.HSVToColor(hsv)
                 if (canvasView.activeTool == ScratchTool.ERASER) {
                     selectTool(ScratchTool.PENCIL)
                 }
+                dlg.dismiss()
             }
-            .setNegativeButton("取消", null)
+        }
+        btnRow.addView(btnCancel)
+        btnRow.addView(btnOk)
+
+        card.addView(wheel)
+        card.addView(valueBar)
+        card.addView(preview)
+        card.addView(btnRow)
+
+        dlg.setContentView(card)
+        dlg.show()
+    }
+
+    private class RainbowRingView(
+        ctx: Context,
+        private val hsv: FloatArray,
+        private val onPick: (hue: Float, sat: Float) -> Unit
+    ) : View(ctx) {
+        private val ringColors = intArrayOf(
+            Color.RED, Color.MAGENTA, Color.BLUE, Color.CYAN, Color.GREEN, Color.YELLOW, Color.RED
+        )
+        private val ringPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE }
+        private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            color = Color.WHITE
+            strokeWidth = 4f
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            val cx = width / 2f
+            val cy = height / 2f
+            val outerR = minOf(cx, cy) * 0.94f
+            val strokeW = outerR * 0.34f
+            val r = outerR - strokeW / 2f
+            ringPaint.strokeWidth = strokeW
+            ringPaint.shader = SweepGradient(cx, cy, ringColors, null)
+            canvas.drawCircle(cx, cy, r, ringPaint)
+
+            val rad = Math.toRadians(-hsv[0].toDouble())
+            val px = cx + (r * kotlin.math.cos(rad)).toFloat()
+            val py = cy + (r * kotlin.math.sin(rad)).toFloat()
+            canvas.drawCircle(px, py, strokeW * 0.28f, dotPaint)
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            if (event.actionMasked in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE)) {
+                val dx = event.x - width / 2f
+                val dy = event.y - height / 2f
+                val dist = hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                if (dist > width * 0.14f) {
+                    var deg = Math.toDegrees(-atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                    if (deg < 0f) deg += 360f
+                    onPick(deg, 1f)
+                    invalidate()
+                }
+                return true
+            }
+            return super.onTouchEvent(event)
+        }
+    }
+
+    private class BrightnessGradientView(
+        ctx: Context,
+        private val hsv: FloatArray,
+        private val onPickValue: (Float) -> Unit
+    ) : View(ctx) {
+        private var hue = hsv[0]
+        private var sat = hsv[1]
+        private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            color = Color.parseColor("#5C85B5")
+            strokeWidth = 3f
+        }
+        private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            color = Color.parseColor("#1976D2")
+            strokeWidth = 4f
+        }
+
+        fun setBaseHueSat(h: Float, s: Float) {
+            hue = h; sat = s
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            val pure = Color.HSVToColor(floatArrayOf(hue, sat, 1f))
+            barPaint.shader = LinearGradient(
+                0f, 0f, width.toFloat(), 0f,
+                intArrayOf(Color.BLACK, pure, Color.WHITE),
+                floatArrayOf(0f, 0.5f, 1f),
+                Shader.TileMode.CLAMP
+            )
+            canvas.drawRect(1.5f, 1.5f, width - 1.5f, height - 1.5f, barPaint)
+            canvas.drawRect(1.5f, 1.5f, width - 1.5f, height - 1.5f, borderPaint)
+            val tx = (hsv[2] * 0.65f * width).coerceIn(6f, width - 6f)
+            canvas.drawLine(tx, 2f, tx, height - 2f, thumbPaint)
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            if (event.actionMasked in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE)) {
+                val ratio = (event.x / width.toFloat().coerceAtLeast(1f)).coerceIn(0.05f, 1f)
+                hsv[2] = if (ratio <= 0.5f) ratio * 2f else 1f
+                if (ratio > 0.5f) {
+                    sat = (1f - (ratio - 0.5f) * 2f).coerceIn(0f, 1f)
+                    hsv[1] = sat
+                }
+                onPickValue(hsv[2])
+                invalidate()
+                return true
+            }
+            return super.onTouchEvent(event)
+        }
+    }
+
+    private fun showShapePickerDialog() {
+        val kinds = ShapeKind.values()
+        val labels = kinds.map { it.label }.toTypedArray()
+        val idx = kinds.indexOf(canvasView.activeShapeKind).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("选择图形 / 直尺工具")
+            .setSingleChoiceItems(labels, idx) { dlg, which ->
+                canvasView.activeShapeKind = kinds[which]
+                selectTool(ScratchTool.SHAPE)
+                dlg.dismiss()
+            }
+            .show()
+    }
+
+    private fun showMoreActionsDialog() {
+        val opts = arrayOf(
+            "切换适配 / 满屏画布",
+            "更换草稿纸底纹（${canvasView.paperBackground.label}）",
+            "撤销上一笔",
+            "重做下一笔",
+            "保存到我的收藏夹"
+        )
+        AlertDialog.Builder(this)
+            .setTitle("画布与更多操作")
+            .setItems(opts) { _, which ->
+                when (which) {
+                    0 -> canvasView.isCenteredFitMode = !canvasView.isCenteredFitMode
+                    1 -> showPaperBackgroundDialog()
+                    2 -> canvasView.undo()
+                    3 -> canvasView.redo()
+                    4 -> {
+                        val bmp = canvasView.exportToBitmap()
+                        AddToQuestionBookDialog.show(
+                            activity = this,
+                            sourceType = "SCRATCHPAD",
+                            defaultTitle = "草稿本笔记",
+                            defaultBook = "草稿本存档",
+                            defaultTag = "草稿",
+                            bitmap = bmp
+                        )
+                    }
+                }
+            }
             .show()
     }
 
@@ -353,22 +500,6 @@ class FingerDrawActivity : AppCompatActivity() {
                 canvasView.paperBackground = values[which]
                 dlg.dismiss()
             }
-            .show()
-    }
-
-    private fun promptTextAt(nx: Float, ny: Float) {
-        val et = EditText(this).apply {
-            hint = "在这里输入文字，支持多行"
-            minLines = 2
-            setPadding(dp(14), dp(10), dp(14), dp(10))
-        }
-        AlertDialog.Builder(this)
-            .setTitle("文字输入")
-            .setView(et)
-            .setPositiveButton("添加") { _, _ ->
-                canvasView.addTextStroke(nx, ny, et.text.toString())
-            }
-            .setNegativeButton("取消", null)
             .show()
     }
 

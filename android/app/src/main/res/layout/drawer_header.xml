@@ -5,14 +5,17 @@
     android:background="@color/primaryColor"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:paddingTop="30dp"
-    android:paddingBottom="20dp">
+    android:paddingTop="24dp"
+    android:paddingBottom="18dp">
 
     <ImageView
         android:id="@+id/iv_thumbnail"
-        android:layout_width="110dp"
-        android:layout_height="110dp"
-        android:layout_marginBottom="8dp"
+        android:layout_width="118dp"
+        android:layout_height="118dp"
+        android:layout_marginBottom="10dp"
+        android:background="#FFFFFFFF"
+        android:elevation="2dp"
+        android:padding="2dp"
         android:scaleType="centerCrop"
         android:src="@drawable/no_pic" />
 
@@ -20,10 +23,10 @@
         android:id="@+id/textViewStudentName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="张三（九年级 3 班）"
+        android:text="李明"
         android:textAppearance="?android:textAppearanceMedium"
         android:textColor="#FFFFFFFF"
-        android:textStyle="bold" />
+        android:textSize="16sp" />
 
     <TextView
         android:id="@+id/textViewServerInfo"
@@ -31,7 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:gravity="center"
-        android:text="本地服务器 10.0.2.2:8765"
-        android:textColor="#DDFFFFFF"
-        android:textSize="13sp" />
+        android:text="373601 · 10.0.2.2:8765"
+        android:textColor="#EEFFFFFF"
+        android:textSize="13.5sp" />
 </LinearLayout>

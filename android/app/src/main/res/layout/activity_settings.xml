@@ -3,31 +3,32 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFF5F7FA"
+    android:background="#FFFFFFFF"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="52dp"
         android:background="@color/primaryColor"
-        android:elevation="4dp"
+        android:elevation="2dp"
         android:theme="@style/ToolbarTheme"
-        app:title="设置"
+        app:title="基本信息"
         app:titleTextColor="#FFFFFF" />
 
-    <!-- Responsive 1-Level (Headers) + 2-Level (Detail) Master-Detail Container -->
+    <!-- Flat white 1-Level (Headers) + 2-Level (Detail) Master-Detail matching original screenshots 30-35 -->
     <LinearLayout
         android:id="@+id/settingsSplitRoot"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:background="#FFFFFFFF"
         android:orientation="horizontal">
 
         <!-- Level 1: Category Headers List -->
         <ScrollView
             android:id="@+id/svLevel1Headers"
-            android:layout_width="296dp"
+            android:layout_width="310dp"
             android:layout_height="match_parent"
             android:background="#FFFFFFFF">
 
@@ -35,8 +36,7 @@
                 android:id="@+id/llLevel1Headers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingVertical="6dp" />
+                android:orientation="vertical" />
         </ScrollView>
 
         <View
@@ -45,20 +45,23 @@
             android:layout_height="match_parent"
             android:background="#FFE0E0E0" />
 
-        <!-- Level 2: Detail Settings Pane -->
+        <!-- Level 2: Pure white flat preference list -->
         <ScrollView
             android:id="@+id/svLevel2Detail"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:background="#FFF7F9FC">
+            android:background="#FFFFFFFF">
 
             <LinearLayout
                 android:id="@+id/llLevel2Content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="#FFFFFFFF"
                 android:orientation="vertical"
-                android:padding="18dp" />
+                android:paddingHorizontal="20dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="24dp" />
         </ScrollView>
     </LinearLayout>
 </LinearLayout>

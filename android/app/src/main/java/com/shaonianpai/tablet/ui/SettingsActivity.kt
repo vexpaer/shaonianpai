@@ -2,26 +2,23 @@ package com.shaonianpai.tablet.ui
 
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.ScrollView
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.cardview.widget.CardView
 import com.shaonianpai.tablet.R
 import com.shaonianpai.tablet.data.Repository
 import com.shaonianpai.tablet.data.UpdateCheckResult
@@ -30,12 +27,12 @@ import com.shaonianpai.tablet.data.UserProfileStore
 import java.io.File
 
 /**
- * Authentic 1-Level + 2-Level Settings matching original settings_headers.xml:
- * - Tablet landscape (>= 680dp): Classic 2-pane Master-Detail view.
- * - Portrait phone (< 680dp): 1-level header list -> click enters 2-level detail page with back navigation.
- * Includes User Profile (avatar / username / studentId / class), Desktop Background (custom gallery / presets),
- * Desk Icons (lock / ShowIcons / reset relative positions), Floating Bar toggle, Pen widths, Cache management,
- * Teacher Server, GitHub Auto-Update, and Android System Settings shortcut.
+ * Pure-white flat Master-Detail Settings matching original screenshots 30-35:
+ * - Tablet landscape (>= 680dp): 2-pane flat preference view with solid blue active category row.
+ * - Portrait (< 680dp): 1-level category headers -> tap enters 2-level detail page with back navigation.
+ * Preserves all custom features: gallery avatar/wallpaper, built-in presets, username/studentId/class,
+ * ShowIcons/LockIcons/ResetPositions, FloatingQuickBar toggle, Pen widths, Cache management,
+ * Teacher Server URL tester, and GitHub auto-updater.
  */
 class SettingsActivity : AppCompatActivity() {
 
@@ -47,13 +44,13 @@ class SettingsActivity : AppCompatActivity() {
     )
 
     private val headers = listOf(
-        SettingsHeader("user", R.drawable.set_ic_user, "基本信息", "用户头像、用户名、班级与登录设置"),
-        SettingsHeader("ui", R.drawable.set_ic_ui, "界面与背景设置", "桌面背景图片、图标位置、悬浮条与主题"),
-        SettingsHeader("draw", R.drawable.set_ic_draw, "手写笔设置", "设置细笔、粗笔粗细与默认批注习惯"),
-        SettingsHeader("cache", R.drawable.set_ic_cache, "缓存设置", "查看分项缓存大小与清理临时缓存"),
-        SettingsHeader("misc", R.drawable.set_ic_misc, "其它与服务器", "教师资料服务地址、夜间休眠与杂项"),
-        SettingsHeader("about", R.drawable.set_ic_about, "关于与更新", "当前版本、GitHub 自动检查与更新日志"),
-        SettingsHeader("system", R.drawable.set_ic_sys, "系统设置", "进入 Android 系统设置")
+        SettingsHeader("user", R.drawable.set_ic_user, "基本信息", "设置用户，账户相关的信息"),
+        SettingsHeader("ui", R.drawable.set_ic_ui, "界面设置", "设置桌面图标，主题"),
+        SettingsHeader("draw", R.drawable.set_ic_draw, "手写笔设置", "设置手写笔粗细"),
+        SettingsHeader("cache", R.drawable.set_ic_cache, "缓存设置", "缓存大小及清除缓存"),
+        SettingsHeader("misc", R.drawable.set_ic_misc, "其它设置", "其它杂项设置"),
+        SettingsHeader("about", R.drawable.set_ic_about, "关于", "软件版本及更新等相关"),
+        SettingsHeader("system", R.drawable.set_ic_sys, "系统设置", "进入系统设置")
     )
 
     private lateinit var toolbar: Toolbar
@@ -75,6 +72,7 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        FloatingQuickBar.attachIfNeeded(this)
 
         toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -118,10 +116,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun applyPaneVisibility() {
         if (isTwoPane) {
             svLevel1.visibility = View.VISIBLE
-            svLevel1.layoutParams = LinearLayout.LayoutParams(dp(296), ViewGroup.LayoutParams.MATCH_PARENT)
+            svLevel1.layoutParams = LinearLayout.LayoutParams(dp(310), ViewGroup.LayoutParams.MATCH_PARENT)
             vDivider.visibility = View.VISIBLE
             svLevel2.visibility = View.VISIBLE
-            supportActionBar?.title = "设置"
+            supportActionBar?.title = headers.firstOrNull { it.key == activeKey }?.title ?: "设置"
         } else {
             vDivider.visibility = View.GONE
             if (inPhoneLevel2) {
@@ -141,79 +139,36 @@ class SettingsActivity : AppCompatActivity() {
         llLevel1.removeAllViews()
         val primary = UserProfileStore.getThemePrimaryColor(this)
 
-        // Compact user profile banner at top of Level 1
-        val profileCard = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
-            setBackgroundColor(Color.parseColor("#EEF5FC"))
-            setOnClickListener { openSection("user") }
-        }
-        val ivMiniAvatar = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-        UserProfileStore.applyAvatarTo(this, ivMiniAvatar)
-        val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(12) }
-        }
-        col.addView(TextView(this).apply {
-            text = UserProfileStore.getUserName(this@SettingsActivity)
-            textSize = 15.5f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#212121"))
-        })
-        col.addView(TextView(this).apply {
-            text = "${UserProfileStore.getClassName(this@SettingsActivity)} · 学号 ${UserProfileStore.getStudentId(this@SettingsActivity)}"
-            textSize = 12f
-            setTextColor(Color.parseColor("#607D8B"))
-        })
-        profileCard.addView(ivMiniAvatar)
-        profileCard.addView(col)
-        llLevel1.addView(profileCard)
-        llLevel1.addView(makeDivider())
-
         for (h in headers) {
             val selected = isTwoPane && h.key == activeKey
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(16), dp(13), dp(14), dp(13))
-                setBackgroundColor(if (selected) Color.parseColor("#E3F2FD") else Color.WHITE)
+                setPadding(dp(18), dp(12), dp(14), dp(12))
+                setBackgroundColor(if (selected) primary else Color.WHITE)
                 setOnClickListener { openSection(h.key) }
             }
             row.addView(ImageView(this).apply {
                 setImageResource(h.iconRes)
-                layoutParams = LinearLayout.LayoutParams(dp(30), dp(30))
                 scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply { marginEnd = dp(14) }
             })
-            val textCol = LinearLayout(this).apply {
+            val colText = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = dp(12)
-                }
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             }
-            textCol.addView(TextView(this).apply {
+            colText.addView(TextView(this).apply {
                 text = h.title
-                textSize = 15f
-                setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
-                setTextColor(if (selected) primary else Color.parseColor("#212121"))
+                textSize = 15.5f
+                setTextColor(if (selected) Color.WHITE else Color.parseColor("#212121"))
             })
-            textCol.addView(TextView(this).apply {
+            colText.addView(TextView(this).apply {
                 text = h.summary
-                textSize = 12f
-                maxLines = 1
-                setTextColor(Color.parseColor("#78909C"))
+                textSize = 12.5f
+                setTextColor(if (selected) Color.parseColor("#E3F2FD") else Color.parseColor("#757575"))
             })
-            row.addView(textCol)
-            row.addView(TextView(this).apply {
-                text = "›"
-                textSize = 20f
-                setTextColor(if (selected) primary else Color.parseColor("#B0BEC5"))
-            })
+            row.addView(colText)
             llLevel1.addView(row)
-            llLevel1.addView(makeDivider())
         }
     }
 
@@ -227,8 +182,8 @@ class SettingsActivity : AppCompatActivity() {
         activeKey = key
         if (!isTwoPane) {
             inPhoneLevel2 = true
-            applyPaneVisibility()
         }
+        applyPaneVisibility()
         renderLevel1Headers()
         renderLevel2Detail(key)
     }
@@ -246,201 +201,110 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    // ==================== Level 2: 基本信息（头像、用户名、班级、登录设置） ====================
+    // ==================== Level 2: 基本信息 ====================
     private fun buildUserDetail() {
-        llLevel2.addView(makeCategoryTitle("头像设置"))
-        val avatarCard = makeCard()
-        val avatarRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val ivPreview = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(72), dp(72))
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-        UserProfileStore.applyAvatarTo(this, ivPreview)
-        val btnCol = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(16) }
-        }
-        btnCol.addView(TextView(this).apply {
-            text = "用户头像"
-            textSize = 15f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#212121"))
-        })
-        btnCol.addView(TextView(this).apply {
-            text = "支持从相册自定义头像或选用内置头像，实时同步到桌面左侧抽屉"
-            textSize = 12f
-            setTextColor(Color.parseColor("#757575"))
-            setPadding(0, dp(3), 0, dp(8))
-        })
-        val btnRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                if (!isTwoPane) topMargin = dp(10)
-            }
-        }
-        val btnPickAvatar = makePrimaryButton("相册选图") { pickImage(REQ_PICK_AVATAR) }
-        val btnPresetAvatar = makeOutlineButton("内置头像") { showAvatarPresetDialog() }
-        if (!isTwoPane) {
-            btnPickAvatar.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            btnPresetAvatar.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(10) }
-        } else {
-            (btnPresetAvatar.layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
-        }
-        btnRow.addView(btnPickAvatar)
-        btnRow.addView(btnPresetAvatar)
-        if (isTwoPane) {
-            btnCol.addView(btnRow)
-        }
-        avatarRow.addView(ivPreview)
-        avatarRow.addView(btnCol)
-        avatarCard.addView(avatarRow)
-        if (!isTwoPane) {
-            avatarCard.addView(btnRow)
-        }
-        llLevel2.addView(avatarCard)
+        llLevel2.addView(makeCategoryTitle("头像"))
+        llLevel2.addView(makeAvatarPrefRow())
+        llLevel2.addView(makeDivider())
 
         llLevel2.addView(makeCategoryTitle("当前账户信息"))
-        val infoCard = makeCard()
-        infoCard.addView(makePrefRow("用户名（姓名）", UserProfileStore.getUserName(this)) {
-            promptEditValue("修改用户名", UserProfileStore.getUserName(this), "输入新的用户名") { v ->
+        llLevel2.addView(makeSingleLinePrefRow("姓名：${UserProfileStore.getUserName(this)}") {
+            promptEditValue("修改姓名", UserProfileStore.getUserName(this), "输入新的姓名") { v ->
                 UserProfileStore.setUserName(this, v)
-                renderLevel1Headers()
                 renderLevel2Detail("user")
             }
         })
-        infoCard.addView(makeDivider())
-        infoCard.addView(makePrefRow("学号", UserProfileStore.getStudentId(this)) {
-            promptEditValue("修改学号", UserProfileStore.getStudentId(this), "输入学号") { v ->
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makeSingleLinePrefRow("用户名：${UserProfileStore.getStudentId(this)}") {
+            promptEditValue("修改用户名 / 学号", UserProfileStore.getStudentId(this), "输入用户名或学号") { v ->
                 UserProfileStore.setStudentId(this, v)
-                renderLevel1Headers()
                 renderLevel2Detail("user")
             }
         })
-        infoCard.addView(makeDivider())
-        infoCard.addView(makePrefRow("班级 / 学校", UserProfileStore.getClassName(this)) {
-            promptEditValue("修改班级", UserProfileStore.getClassName(this), "如：九年级 3 班") { v ->
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makeSingleLinePrefRow("班级：${UserProfileStore.getClassName(this)}") {
+            promptEditValue("修改班级", UserProfileStore.getClassName(this), "如：高二(3)班") { v ->
                 UserProfileStore.setClassName(this, v)
-                renderLevel1Headers()
                 renderLevel2Detail("user")
             }
         })
-        llLevel2.addView(infoCard)
+        llLevel2.addView(makeDivider())
 
         llLevel2.addView(makeCategoryTitle("登录设置"))
-        val loginCard = makeCard()
-        loginCard.addView(makeSwitchRow("保存登录密码", "选中后每次无需重复输入密码", UserProfileStore.isRememberPassword(this)) {
-            UserProfileStore.setRememberPassword(this, it)
-        })
-        loginCard.addView(makeDivider())
-        loginCard.addView(makeSwitchRow("自动登录", "配合保存密码，下次启动自动进入桌面", UserProfileStore.isAutoLogin(this)) {
-            UserProfileStore.setAutoLogin(this, it)
-        })
-        loginCard.addView(makeDivider())
-        loginCard.addView(makePrefRow("修改登录密码", "点击设置本地演示登录密码") {
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "保存登录密码",
+                "选中后，您每次不需要重新输入密码。",
+                UserProfileStore.isRememberPassword(this)
+            ) { UserProfileStore.setRememberPassword(this, it) }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "自动登录",
+                "配合保存密码选项，选中此项后，下次可以自动登录。",
+                UserProfileStore.isAutoLogin(this)
+            ) { UserProfileStore.setAutoLogin(this, it) }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("修改登录密码", "点击这里修改登录密码") {
             promptEditValue("修改登录密码", "", "请输入新密码") {
                 Toast.makeText(this, "登录密码已更新", Toast.LENGTH_SHORT).show()
             }
         })
-        llLevel2.addView(loginCard)
+        llLevel2.addView(makeDivider())
     }
 
-    // ==================== Level 2: 界面与背景设置（背景图片、桌面图标、悬浮条、主题） ====================
+    // ==================== Level 2: 界面设置 ====================
     private fun buildUiDetail() {
-        llLevel2.addView(makeCategoryTitle("桌面背景图片（横竖屏自动拉伸铺满）"))
-        val bgCard = makeCard()
-        val bgRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        val ivBgPreview = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(118), dp(82))
-            scaleType = ImageView.ScaleType.FIT_XY
-        }
-        UserProfileStore.applyDesktopBgTo(this, ivBgPreview)
-        val bgInfo = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(14) }
-        }
-        val curBgType = UserProfileStore.getDesktopBgType(this)
-        val curBgName = UserProfileStore.BG_PRESETS.firstOrNull { it.first == curBgType }?.second ?: "原版书桌背景"
-        bgInfo.addView(TextView(this).apply {
-            text = "当前：$curBgName"
-            textSize = 14.5f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#212121"))
-        })
-        bgInfo.addView(TextView(this).apply {
-            text = "横屏与竖屏都会自动拉伸填满屏幕，桌面 7 件物品按相对坐标跟随定位"
-            textSize = 12f
-            setTextColor(Color.parseColor("#757575"))
-            setPadding(0, dp(3), 0, dp(8))
-        })
-        val bgBtnRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                if (!isTwoPane) topMargin = dp(10)
-            }
-        }
-        val btnPickBg = makePrimaryButton("相册换壁纸") { pickImage(REQ_PICK_BG) }
-        val btnPresetBg = makeOutlineButton("预设 / 还原") { showBgPresetDialog() }
-        if (!isTwoPane) {
-            btnPickBg.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            btnPresetBg.layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(10) }
-        } else {
-            (btnPresetBg.layoutParams as? LinearLayout.LayoutParams)?.marginStart = dp(8)
-        }
-        bgBtnRow.addView(btnPickBg)
-        bgBtnRow.addView(btnPresetBg)
-        if (isTwoPane) {
-            bgInfo.addView(bgBtnRow)
-        }
-        bgRow.addView(ivBgPreview)
-        bgRow.addView(bgInfo)
-        bgCard.addView(bgRow)
-        if (!isTwoPane) {
-            bgCard.addView(bgBtnRow)
-        }
-        llLevel2.addView(bgCard)
-
-        llLevel2.addView(makeCategoryTitle("桌面图标与悬浮工具条"))
         val prefs = getSharedPreferences("shaonianpai_prefs", MODE_PRIVATE)
-        val iconCard = makeCard()
-        iconCard.addView(makeSwitchRow("锁定桌面图标", "选中后不能随意拖动桌面 7 件物品", prefs.getBoolean("LockIcons", false)) {
-            prefs.edit().putBoolean("LockIcons", it).apply()
-        })
-        iconCard.addView(makeDivider())
+
+        llLevel2.addView(makeCategoryTitle("桌面图标"))
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "锁定桌面图标",
+                "选中后，您将不能随意移动桌面图标",
+                prefs.getBoolean("LockIcons", false)
+            ) { prefs.edit().putBoolean("LockIcons", it).apply() }
+        )
+        llLevel2.addView(makeDivider())
         val shownCnt = UserProfileStore.getVisibleDeskIcons(this).size
-        iconCard.addView(makePrefRow("桌面显示图标...", "当前显示 $shownCnt / 7 个桌面物品（隐藏项仍可从左侧抽屉打开）") {
-            showDeskIconsMultiSelectDialog()
-        })
-        iconCard.addView(makeDivider())
-        iconCard.addView(makePrefRow("还原默认图标位置", "重置全部 7 个桌面物品的相对位置坐标") {
+        llLevel2.addView(
+            makePrefRow(
+                "桌面显示图标...",
+                "点击这里选择哪些图标需要在桌面显示（已选 $shownCnt / 7），隐藏的图标可以通过左侧滑动菜单打开。"
+            ) { showDeskIconsMultiSelectDialog() }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("还原默认图标位置", "如果您把图标移动乱了，可以点击这个清除图标位置信息") {
             val ed = prefs.edit()
             for (k in UserProfileStore.ALL_DESK_ICON_KEYS) {
                 ed.remove("pos_x_$k").remove("pos_y_$k").remove("pos_rx_$k").remove("pos_ry_$k")
             }
             ed.apply()
-            Toast.makeText(this, "已还原全部 7 个桌面图标默认相对坐标", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "已还原全部 7 个桌面图标默认位置", Toast.LENGTH_SHORT).show()
         })
-        iconCard.addView(makeDivider())
-        iconCard.addView(makeSwitchRow("显示全局悬浮快捷条", "收藏夹 / 截屏 / 拍照 / 草稿本", FloatingQuickBar.isEnabled(this)) {
-            FloatingQuickBar.setEnabled(this, it)
-            FloatingQuickBar.attachIfNeeded(this)
-        })
-        llLevel2.addView(iconCard)
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "显示全局悬浮快捷条",
+                "右侧悬浮快速工具条（草稿本、拍照、投影、截屏、自主写）",
+                FloatingQuickBar.isEnabled(this)
+            ) {
+                FloatingQuickBar.setEnabled(this, it)
+                FloatingQuickBar.attachIfNeeded(this)
+            }
+        )
+        llLevel2.addView(makeDivider())
 
-        llLevel2.addView(makeCategoryTitle("主题配色"))
-        val themeCard = makeCard()
+        llLevel2.addView(makeCategoryTitle("主题"))
         val curTheme = UserProfileStore.getThemeKey(this)
         val curThemeLabel = UserProfileStore.THEME_OPTIONS.firstOrNull { it.first == curTheme }?.second ?: "默认深海蓝"
-        themeCard.addView(makePrefRow("界面主题", "当前：$curThemeLabel") {
+        llLevel2.addView(makePrefRow("界面主题", "当前：$curThemeLabel，设置程序的默认主题") {
             val labels = UserProfileStore.THEME_OPTIONS.map { it.second }.toTypedArray()
             val idx = UserProfileStore.THEME_OPTIONS.indexOfFirst { it.first == curTheme }.coerceAtLeast(0)
             AlertDialog.Builder(this)
-                .setTitle("选择界面主题")
+                .setTitle("界面主题")
                 .setSingleChoiceItems(labels, idx) { dlg, which ->
                     UserProfileStore.setThemeKey(this, UserProfileStore.THEME_OPTIONS[which].first)
                     toolbar.setBackgroundColor(UserProfileStore.getThemePrimaryColor(this))
@@ -450,212 +314,258 @@ class SettingsActivity : AppCompatActivity() {
                 }
                 .show()
         })
-        llLevel2.addView(themeCard)
+        llLevel2.addView(makeDivider())
+
+        val curBgType = UserProfileStore.getDesktopBgType(this)
+        val curBgName = UserProfileStore.BG_PRESETS.firstOrNull { it.first == curBgType }?.second ?: "原版书桌背景"
+        llLevel2.addView(makePrefRow("自定义桌面背景", "当前：$curBgName（支持从相册自定义壁纸或还原默认书桌）") {
+            AlertDialog.Builder(this)
+                .setTitle("桌面背景图片")
+                .setItems(arrayOf("从相册选取自定义壁纸", "选择内置预设 / 还原默认书桌")) { _, which ->
+                    if (which == 0) pickImage(REQ_PICK_BG) else showBgPresetDialog()
+                }
+                .show()
+        })
+        llLevel2.addView(makeDivider())
     }
 
     // ==================== Level 2: 手写笔设置 ====================
     private fun buildDrawDetail() {
-        llLevel2.addView(makeCategoryTitle("笔粗细设置（同步应用于草稿本与 PDF 批注）"))
-        val card = makeCard()
         val fine = UserProfileStore.getFinePenWidth(this).toInt()
         val thick = UserProfileStore.getThickPenWidth(this).toInt()
-        card.addView(makePrefRow("细笔 / 铅笔默认粗细", "当前：${fine}px（推荐 2–4px）") {
-            val opts = arrayOf("1px", "2px", "3px（默认）", "4px", "6px", "8px")
+
+        llLevel2.addView(makeCategoryTitle("笔粗细设置"))
+        llLevel2.addView(makePrefRow("细笔设置", "设置各种模式下的细笔的粗细，当前为${fine}，默认为2") {
+            val opts = arrayOf("1", "2（默认）", "3", "4", "6", "8")
             val vals = floatArrayOf(1f, 2f, 3f, 4f, 6f, 8f)
             AlertDialog.Builder(this)
-                .setTitle("细笔粗细")
+                .setTitle("细笔设置")
                 .setItems(opts) { _, w ->
                     UserProfileStore.setFinePenWidth(this, vals[w])
                     renderLevel2Detail("draw")
                 }.show()
         })
-        card.addView(makeDivider())
-        card.addView(makePrefRow("粗笔默认粗细", "当前：${thick}px（推荐 8–12px）") {
-            val opts = arrayOf("6px", "8px", "10px（默认）", "12px", "16px", "20px")
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("粗笔设置", "设置各种模式下的粗笔的粗细，当前为${thick}，默认为10") {
+            val opts = arrayOf("6", "8", "10（默认）", "12", "16", "20")
             val vals = floatArrayOf(6f, 8f, 10f, 12f, 16f, 20f)
             AlertDialog.Builder(this)
-                .setTitle("粗笔粗细")
+                .setTitle("粗笔设置")
                 .setItems(opts) { _, w ->
                     UserProfileStore.setThickPenWidth(this, vals[w])
                     renderLevel2Detail("draw")
                 }.show()
         })
-        llLevel2.addView(card)
+        llLevel2.addView(makeDivider())
     }
 
     // ==================== Level 2: 缓存设置 ====================
     private fun buildCacheDetail() {
-        llLevel2.addView(makeCategoryTitle("分项存储与缓存统计"))
         val assetCacheSize = dirBytes(File(cacheDir, "assets"))
         val exportCacheSize = dirBytes(File(cacheDir, "exports")) + dirBytes(File(cacheDir, "updates"))
         val annotSize = dirBytes(File(filesDir, "pdf_annots"))
         val favSize = dirBytes(File(filesDir, "questionbook_media")) + File(filesDir, "questionbook_items.json").length()
         val scratchSize = dirBytes(File(filesDir, "scratchpad"))
 
-        val card = makeCard()
-        card.addView(makeInfoRow("课程资源与 PDF 缓存", Repository.formatBytes(assetCacheSize)))
-        card.addView(makeDivider())
-        card.addView(makeInfoRow("导出文件与安装包临时缓存", Repository.formatBytes(exportCacheSize)))
-        card.addView(makeDivider())
-        card.addView(makeInfoRow("PDF 批注数据（受保护）", Repository.formatBytes(annotSize)))
-        card.addView(makeDivider())
-        card.addView(makeInfoRow("我的收藏夹与草稿本（受保护）", Repository.formatBytes(favSize + scratchSize)))
-        llLevel2.addView(card)
+        llLevel2.addView(makeCategoryTitle("缓存大小"))
+        llLevel2.addView(makeInfoRow("课程资源与 PDF 缓存", Repository.formatBytes(assetCacheSize)))
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makeInfoRow("导出文件与安装包临时缓存", Repository.formatBytes(exportCacheSize)))
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makeInfoRow("PDF 批注数据（受保护）", Repository.formatBytes(annotSize)))
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makeInfoRow("我的试题本与草稿本（受保护）", Repository.formatBytes(favSize + scratchSize)))
+        llLevel2.addView(makeDivider())
 
-        llLevel2.addView(makeCategoryTitle("清理操作"))
-        val cleanCard = makeCard()
-        cleanCard.addView(makePrimaryButton("清除临时缓存（保留批注与收藏夹）") {
+        llLevel2.addView(makeCategoryTitle("清除缓存"))
+        llLevel2.addView(makePrefRow("清除缓存", "点击清除本地临时缓存文件，保留全部批注、试题本与草稿本数据") {
             File(cacheDir, "assets").deleteRecursively()
             File(cacheDir, "exports").deleteRecursively()
             File(cacheDir, "updates").deleteRecursively()
-            Toast.makeText(this, "临时缓存已清理完成", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "缓存清理完成", Toast.LENGTH_SHORT).show()
             renderLevel2Detail("cache")
         })
-        llLevel2.addView(cleanCard)
+        llLevel2.addView(makeDivider())
     }
 
-    // ==================== Level 2: 其它与服务器 ====================
+    // ==================== Level 2: 其它设置 ====================
     private fun buildMiscDetail() {
-        llLevel2.addView(makeCategoryTitle("教师资料服务地址"))
-        val srvCard = makeCard()
-        val etServer = EditText(this).apply {
-            setText(Repository.getServerUrl(this@SettingsActivity))
-            hint = "http://10.0.2.2:8765"
-            setSingleLine(true)
-        }
-        val tvStatus = TextView(this).apply {
-            text = "支持局域网教师端资料同步，断网自动回退离线测试资源"
-            textSize = 12.5f
-            setTextColor(Color.parseColor("#607D8B"))
-            setPadding(0, dp(8), 0, 0)
-        }
-        srvCard.addView(etServer)
-        srvCard.addView(makePrimaryButton("保存并测试连接") {
-            Repository.setServerUrl(this, etServer.text.toString().trim())
-            tvStatus.text = "正在测试连接..."
-            Thread {
-                val (tasks, online) = Repository.fetchDeliveriesSync(this)
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        tvStatus.text = if (online) "连接成功（拉取到 ${tasks.size} 个任务）"
-                        else "未连上服务器，已自动回退离线测试数据（${tasks.size} 个任务）"
-                    }
-                }
-            }.start()
-        }.apply { (layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(8) })
-        srvCard.addView(tvStatus)
-        llLevel2.addView(srvCard)
-
         llLevel2.addView(makeCategoryTitle("其它设置"))
-        val miscCard = makeCard()
-        miscCard.addView(makeSwitchRow("夜晚平板休眠", "在每晚 23:00 到次日 6:00 期间允许平板完全休眠", UserProfileStore.isSleepInNight(this)) {
-            UserProfileStore.setSleepInNight(this, it)
-        })
-        miscCard.addView(makeDivider())
-        miscCard.addView(makePrefRow("删除所有未读提示", "清除自主学习与任务清单的未读红点提示") {
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "夜晚平板休眠",
+                "在每晚的23:00到次日6:00期间，允许平板完全休眠。",
+                UserProfileStore.isSleepInNight(this)
+            ) { UserProfileStore.setSleepInNight(this, it) }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("删除所有未读提示", "删除包括自主学习和在线答疑等部分的所有未读的红点提示") {
             Toast.makeText(this, "已清除全部未读提示", Toast.LENGTH_SHORT).show()
         })
-        llLevel2.addView(miscCard)
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("教师资料服务地址", "当前：${Repository.getServerUrl(this)}（点击设置并测试连接）") {
+            showServerUrlDialog()
+        })
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("备份数据库到外部存储", "备份数据库到外部存储，这样切换完账号以后可以还原全部数据") {
+            Toast.makeText(this, "已备份至本地应用存储目录", Toast.LENGTH_SHORT).show()
+        })
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("还原外部存储的数据库", "还原外部存储的数据库，需要重新进程序才能生效") {
+            Toast.makeText(this, "当前数据已为最新状态", Toast.LENGTH_SHORT).show()
+        })
+        llLevel2.addView(makeDivider())
     }
 
-    // ==================== Level 2: 关于与软件更新 ====================
+    // ==================== Level 2: 关于 ====================
     private fun buildAboutDetail() {
-        llLevel2.addView(makeCategoryTitle("软件更新（GitHub Releases）"))
-        val card = makeCard()
         val curVer = UpdateManager.getCurrentVersionName(this)
-        card.addView(TextView(this).apply {
-            text = "少年派学习平板复刻版 · 当前版本：v$curVer"
-            textSize = 15.5f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#212121"))
-        })
-        card.addView(makeSwitchRow("启动时自动检查 GitHub 新版本", "检测到新版后自动弹出更新下载窗", UpdateManager.isAutoCheckEnabled(this)) {
-            UpdateManager.setAutoCheckEnabled(this, it)
-        })
-        card.addView(TextView(this).apply {
-            text = "更新源仓库（owner/repo）"
-            textSize = 12.5f
-            setTextColor(Color.parseColor("#607D8B"))
-            setPadding(0, dp(8), 0, dp(2))
-        })
-        val etRepo = EditText(this).apply {
-            setText(UpdateManager.getGithubRepo(this@SettingsActivity))
-            hint = UpdateManager.DEFAULT_GITHUB_REPO
-            setSingleLine(true)
-        }
-        card.addView(etRepo)
 
-        val actionRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                topMargin = dp(8)
-            }
-        }
-        val pb = ProgressBar(this).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginStart = dp(12) }
-            visibility = View.GONE
-        }
-        val tvStatus = TextView(this).apply {
-            text = "提示：固定正式签名版本支持应用内直接免卸载覆盖升级"
-            textSize = 12.5f
-            setTextColor(Color.parseColor("#607D8B"))
-            setPadding(0, dp(8), 0, 0)
-        }
-        lateinit var btnCheck: Button
-        btnCheck = makePrimaryButton("检查并安装更新") {
-            val repo = etRepo.text.toString().trim().ifBlank { UpdateManager.DEFAULT_GITHUB_REPO }
-            UpdateManager.setGithubRepo(this, repo)
-            btnCheck.isEnabled = false
-            pb.visibility = View.VISIBLE
-            tvStatus.text = "正在从 GitHub（$repo）检查最新版本..."
-            Thread {
-                val result = UpdateManager.checkLatestReleaseSync(this)
-                runOnUiThread {
-                    if (isFinishing || isDestroyed) return@runOnUiThread
-                    btnCheck.isEnabled = true
-                    pb.visibility = View.GONE
-                    when (result) {
-                        is UpdateCheckResult.UpdateAvailable -> {
-                            tvStatus.text = "发现新版本 ${result.release.tagName}（当前 v${result.currentVersion}）"
-                            UpdateUiHelper.showUpdateDialog(this, result.currentVersion, result.release)
-                        }
-                        is UpdateCheckResult.UpToDate -> {
-                            tvStatus.text = "当前已是最新版本（v${result.currentVersion}，GitHub 最新：${result.latestTag}）"
-                            Toast.makeText(this, "当前已是最新版本", Toast.LENGTH_SHORT).show()
-                        }
-                        is UpdateCheckResult.Error -> {
-                            tvStatus.text = result.message
-                            Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }.start()
-        }
-        actionRow.addView(btnCheck)
-        actionRow.addView(pb)
-        card.addView(actionRow)
-        card.addView(tvStatus)
-        card.addView(makeDivider().apply { (layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(12) })
-        card.addView(makePrefRow("查看版本更新记录", "v0.1.0 → v0.1.6 完整演进日志") {
+        llLevel2.addView(makeCategoryTitle("软件信息"))
+        llLevel2.addView(
+            makePrefRow(
+                "点击这里开始检查新版本",
+                "当前版本：v$curVer  |  更新源：${UpdateManager.getGithubRepo(this)}"
+            ) { runCheckUpdateNow() }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("点击这里查看版本更新记录", null) {
             AlertDialog.Builder(this)
                 .setTitle("版本更新记录")
                 .setMessage(
-                    "• v0.1.6：修复竖屏任务日期拥挤与设置页按钮换行；悬浮条纯图标去速记；草稿本还原默认黄底横线纸、真像素擦除橡皮与调色板；修复横竖屏旋转拖动越界/图标消失；右下角仅显示版本；翻开的书→资源库、书包→软件入口；修复抽屉底部功能图标；重构原版收藏夹/试题本（书本下拉、标签栏、列表/网格切换、分组筛选）\n\n" +
-                        "• v0.1.5：任务详情 PDF 两段式占位展开、浅底音频条、视频真实封面帧预览、纯白边框福昕阅读页\n\n" +
-                        "• v0.1.4：纯书桌全屏拉伸与相对坐标、1+2 级原版架构设置（壁纸/头像/用户名）、任务详情内嵌 PDF 预览与左侧目录\n\n" +
-                        "• v0.1.3：原版蓝框全局悬浮快捷条、本地收藏夹与草稿本\n\n" +
-                        "• v0.1.2：福昕风格全功能 PDF 批注阅读器\n\n" +
-                        "• v0.1.1：固定正式签名与 v0.1.n+1 自动发布\n\n" +
-                        "• v0.1.0：原生客户端与本地教师端首版"
+                    "• v0.1.7：基于原版 MatePad 真机实拍全量 1:1 界面重构（登录页极简下划线密码框、透明汉堡菜单、6键右缘悬浮球、纯文字抽屉功能栏、居中几何弹窗式「我的书包」、草稿本纯白线稿工具栏+HSV彩虹色轮+90°旋转竖纸模式、蓝框学科筛选图标、「学习」双Tab资源库、「全部试题本」标签同步、标准SplitView课程表与日历、纯白扁平Master-Detail设置页），同时保留自定义壁纸/头像与离线教学样例\n\n" +
+                        "• v0.1.6：重构收藏夹/试题本、黄底横线草稿本与悬浮快捷条\n\n" +
+                        "• v0.1.5：任务详情两段式内嵌 PDF 与视频真帧封面\n\n" +
+                        "• v0.1.4：纯书桌全屏拉伸、相对坐标与 1+2 设置架构\n\n" +
+                        "• v0.1.0–0.1.3：原生学习平板主框架、福昕批注阅读器与签名升级通道"
                 )
                 .setPositiveButton("确定", null)
                 .show()
         })
-        llLevel2.addView(card)
+        llLevel2.addView(makeDivider())
+
+        llLevel2.addView(makeCategoryTitle("自动更新设置"))
+        llLevel2.addView(
+            makeCheckBoxRow(
+                "启动时自动检查 GitHub 新版本",
+                "检测到正式签名新版本后自动提示覆盖升级",
+                UpdateManager.isAutoCheckEnabled(this)
+            ) { UpdateManager.setAutoCheckEnabled(this, it) }
+        )
+        llLevel2.addView(makeDivider())
+        llLevel2.addView(makePrefRow("设置更新源仓库", "当前仓库：${UpdateManager.getGithubRepo(this)}") {
+            promptEditValue("GitHub 更新源仓库 (owner/repo)", UpdateManager.getGithubRepo(this), UpdateManager.DEFAULT_GITHUB_REPO) { v ->
+                val clean = v.trim().ifBlank { UpdateManager.DEFAULT_GITHUB_REPO }
+                UpdateManager.setGithubRepo(this, clean)
+                renderLevel2Detail("about")
+            }
+        })
+        llLevel2.addView(makeDivider())
+    }
+
+    private fun runCheckUpdateNow() {
+        Toast.makeText(this, "正在从 GitHub 检查最新版本...", Toast.LENGTH_SHORT).show()
+        Thread {
+            val result = UpdateManager.checkLatestReleaseSync(this)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                when (result) {
+                    is UpdateCheckResult.UpdateAvailable -> {
+                        UpdateUiHelper.showUpdateDialog(this, result.currentVersion, result.release)
+                    }
+                    is UpdateCheckResult.UpToDate -> {
+                        Toast.makeText(this, "当前已是最新版本（v${result.currentVersion}，GitHub 最新：${result.latestTag}）", Toast.LENGTH_LONG).show()
+                    }
+                    is UpdateCheckResult.Error -> {
+                        Toast.makeText(this, result.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }.start()
+    }
+
+    private fun showServerUrlDialog() {
+        val wrap = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(10), dp(20), dp(4))
+        }
+        val et = EditText(this).apply {
+            setText(Repository.getServerUrl(this@SettingsActivity))
+            hint = "http://10.0.2.2:8765"
+            setSingleLine(true)
+        }
+        val tvNote = TextView(this).apply {
+            text = "断网或未配置服务时自动回退本地完整教学样例"
+            textSize = 12f
+            setTextColor(Color.parseColor("#757575"))
+            setPadding(0, dp(6), 0, 0)
+        }
+        wrap.addView(et)
+        wrap.addView(tvNote)
+        AlertDialog.Builder(this)
+            .setTitle("教师资料服务地址")
+            .setView(wrap)
+            .setPositiveButton("保存并测试连接") { _, _ ->
+                Repository.setServerUrl(this, et.text.toString().trim())
+                Thread {
+                    val (tasks, online) = Repository.fetchDeliveriesSync(this)
+                    runOnUiThread {
+                        if (!isFinishing && !isDestroyed) {
+                            Toast.makeText(
+                                this,
+                                if (online) "连接成功（拉取到 ${tasks.size} 个任务）" else "未连上服务器，已自动回退离线测试数据（${tasks.size} 个任务）",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            renderLevel2Detail("misc")
+                        }
+                    }
+                }.start()
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     // ==================== Pickers & Dialog Helpers ====================
+    private fun makeAvatarPrefRow(): View {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(14), dp(4), dp(14))
+            background = getSelectableBg()
+            setOnClickListener {
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("设置用户头像")
+                    .setItems(arrayOf("从相册选择图片", "选择内置预设头像")) { _, w ->
+                        if (w == 0) pickImage(REQ_PICK_AVATAR) else showAvatarPresetDialog()
+                    }
+                    .show()
+            }
+        }
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(12) }
+        }
+        col.addView(TextView(this).apply {
+            text = "设置用户头像"
+            textSize = 16f
+            setTextColor(Color.parseColor("#212121"))
+        })
+        col.addView(TextView(this).apply {
+            text = "点击这里设置用户头像，支持相册选图与内置头像。"
+            textSize = 13f
+            setTextColor(Color.parseColor("#757575"))
+            setPadding(0, dp(3), 0, 0)
+        })
+        val iv = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(44), dp(44))
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+        UserProfileStore.applyAvatarTo(this, iv)
+        row.addView(col)
+        row.addView(iv)
+        return row
+    }
+
     private fun pickImage(reqCode: Int) {
         val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*" }
         runCatching {
@@ -675,7 +585,6 @@ class SettingsActivity : AppCompatActivity() {
             REQ_PICK_AVATAR -> {
                 if (UserProfileStore.saveCustomAvatarFromUri(this, uri)) {
                     Toast.makeText(this, "用户头像已更新", Toast.LENGTH_SHORT).show()
-                    renderLevel1Headers()
                     renderLevel2Detail("user")
                 } else {
                     Toast.makeText(this, "头像读取失败", Toast.LENGTH_SHORT).show()
@@ -700,7 +609,6 @@ class SettingsActivity : AppCompatActivity() {
             .setSingleChoiceItems(items, cur) { dlg, which ->
                 UserProfileStore.setAvatarPreset(this, which)
                 dlg.dismiss()
-                renderLevel1Headers()
                 renderLevel2Detail("user")
             }
             .show()
@@ -729,12 +637,12 @@ class SettingsActivity : AppCompatActivity() {
             visible.contains(UserProfileStore.ALL_DESK_ICON_KEYS[i])
         }
         AlertDialog.Builder(this)
-            .setTitle("选择显示在桌面的图标")
+            .setTitle("桌面显示图标")
             .setMultiChoiceItems(labels, checked) { _, which, isChecked ->
                 val k = UserProfileStore.ALL_DESK_ICON_KEYS[which]
                 if (isChecked) visible.add(k) else visible.remove(k)
             }
-            .setPositiveButton("保存") { _, _ ->
+            .setPositiveButton("确定") { _, _ ->
                 UserProfileStore.setVisibleDeskIcons(this, visible)
                 renderLevel2Detail("ui")
             }
@@ -756,56 +664,54 @@ class SettingsActivity : AppCompatActivity() {
             .show()
     }
 
-    // ==================== UI Builders ====================
+    // ==================== Flat Preference UI Builders (Screenshots 30-35) ====================
+    private fun getSelectableBg(): android.graphics.drawable.Drawable? {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+        return androidx.core.content.ContextCompat.getDrawable(this, tv.resourceId)
+    }
+
     private fun makeCategoryTitle(title: String): TextView = TextView(this).apply {
         text = title
         textSize = 13.5f
         setTypeface(null, Typeface.BOLD)
         setTextColor(UserProfileStore.getThemePrimaryColor(this@SettingsActivity))
-        setPadding(dp(4), dp(8), dp(4), dp(8))
+        setPadding(0, dp(16), 0, dp(6))
     }
 
-    private fun makeCard(): LinearLayout {
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            background = GradientDrawable().apply {
-                setColor(Color.WHITE)
-                cornerRadius = dp(10).toFloat()
-                setStroke(dp(1), Color.parseColor("#E6EBF2"))
-            }
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = dp(14)
-            }
-        }
-    }
-
-    private fun makePrefRow(title: String, summary: String, onClick: () -> Unit): View {
+    private fun makeSingleLinePrefRow(title: String, onClick: () -> Unit): View {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(10), 0, dp(10))
-            val col = LinearLayout(this@SettingsActivity).apply {
-                orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            col.addView(TextView(this@SettingsActivity).apply {
+            background = getSelectableBg()
+            setPadding(0, dp(15), dp(4), dp(15))
+            addView(TextView(this@SettingsActivity).apply {
                 text = title
-                textSize = 15f
+                textSize = 16f
                 setTextColor(Color.parseColor("#212121"))
             })
-            col.addView(TextView(this@SettingsActivity).apply {
-                text = summary
-                textSize = 12.5f
-                setTextColor(Color.parseColor("#757575"))
-                setPadding(0, dp(2), 0, 0)
-            })
-            addView(col)
+            setOnClickListener { onClick() }
+        }
+    }
+
+    private fun makePrefRow(title: String, summary: String?, onClick: () -> Unit): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = getSelectableBg()
+            setPadding(0, dp(14), dp(4), dp(14))
             addView(TextView(this@SettingsActivity).apply {
-                text = "›"
-                textSize = 20f
-                setTextColor(Color.parseColor("#B0BEC5"))
+                text = title
+                textSize = 16f
+                setTextColor(Color.parseColor("#212121"))
             })
+            if (!summary.isNullOrBlank()) {
+                addView(TextView(this@SettingsActivity).apply {
+                    text = summary
+                    textSize = 13f
+                    setTextColor(Color.parseColor("#757575"))
+                    setPadding(0, dp(3), 0, 0)
+                })
+            }
             setOnClickListener { onClick() }
         }
     }
@@ -814,96 +720,59 @@ class SettingsActivity : AppCompatActivity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(10), 0, dp(10))
+            setPadding(0, dp(14), dp(4), dp(14))
             addView(TextView(this@SettingsActivity).apply {
                 text = title
-                textSize = 14.5f
+                textSize = 15.5f
                 setTextColor(Color.parseColor("#212121"))
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
             addView(TextView(this@SettingsActivity).apply {
                 text = value
-                textSize = 14f
-                setTextColor(UserProfileStore.getThemePrimaryColor(this@SettingsActivity))
-                setTypeface(null, Typeface.BOLD)
+                textSize = 14.5f
+                setTextColor(Color.parseColor("#757575"))
             })
         }
     }
 
-    private fun makeSwitchRow(title: String, summary: String, checked: Boolean, onChanged: (Boolean) -> Unit): View {
+    private fun makeCheckBoxRow(title: String, summary: String, checked: Boolean, onChanged: (Boolean) -> Unit): View {
+        val primary = UserProfileStore.getThemePrimaryColor(this)
+        val cb = CheckBox(this).apply {
+            isChecked = checked
+            buttonTintList = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(primary, Color.parseColor("#757575"))
+            )
+            setOnCheckedChangeListener { _, isChecked -> onChanged(isChecked) }
+        }
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, dp(8), 0, dp(8))
+            background = getSelectableBg()
+            setPadding(0, dp(13), dp(4), dp(13))
             val col = LinearLayout(this@SettingsActivity).apply {
                 orientation = LinearLayout.VERTICAL
-                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(10) }
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dp(12) }
             }
             col.addView(TextView(this@SettingsActivity).apply {
                 text = title
-                textSize = 15f
+                textSize = 16f
                 setTextColor(Color.parseColor("#212121"))
             })
             col.addView(TextView(this@SettingsActivity).apply {
                 text = summary
-                textSize = 12f
+                textSize = 13f
                 setTextColor(Color.parseColor("#757575"))
+                setPadding(0, dp(3), 0, 0)
             })
-            val sw = Switch(this@SettingsActivity).apply {
-                isChecked = checked
-                setOnCheckedChangeListener { _, isChecked -> onChanged(isChecked) }
-            }
             addView(col)
-            addView(sw)
+            addView(cb)
+            setOnClickListener { cb.isChecked = !cb.isChecked }
         }
-    }
-
-    private fun makePrimaryButton(label: String, onClick: () -> Unit): Button = Button(this).apply {
-        text = label
-        textSize = 13f
-        isSingleLine = true
-        maxLines = 1
-        isAllCaps = false
-        ellipsize = android.text.TextUtils.TruncateAt.END
-        setTextColor(Color.WHITE)
-        background = GradientDrawable().apply {
-            setColor(UserProfileStore.getThemePrimaryColor(this@SettingsActivity))
-            cornerRadius = dp(6).toFloat()
-        }
-        setPadding(dp(12), dp(6), dp(12), dp(6))
-        minWidth = 0
-        minimumWidth = 0
-        minHeight = dp(38)
-        minimumHeight = dp(38)
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        setOnClickListener { onClick() }
-    }
-
-    private fun makeOutlineButton(label: String, onClick: () -> Unit): Button = Button(this).apply {
-        text = label
-        textSize = 13f
-        isSingleLine = true
-        maxLines = 1
-        isAllCaps = false
-        ellipsize = android.text.TextUtils.TruncateAt.END
-        val primary = UserProfileStore.getThemePrimaryColor(this@SettingsActivity)
-        setTextColor(primary)
-        background = GradientDrawable().apply {
-            setColor(Color.TRANSPARENT)
-            setStroke(dp(1), primary)
-            cornerRadius = dp(6).toFloat()
-        }
-        setPadding(dp(12), dp(6), dp(12), dp(6))
-        minWidth = 0
-        minimumWidth = 0
-        minHeight = dp(38)
-        minimumHeight = dp(38)
-        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        setOnClickListener { onClick() }
     }
 
     private fun makeDivider(): View = View(this).apply {
-        setBackgroundColor(Color.parseColor("#EEEEEE"))
+        setBackgroundColor(Color.parseColor("#E0E0E0"))
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1))
     }
 

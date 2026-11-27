@@ -65,6 +65,8 @@ class QuestionBookActivity : AppCompatActivity() {
 
     private lateinit var spinnerBooks: Spinner
     private lateinit var llTags: LinearLayout
+    private lateinit var hsvTagBar: View
+    private lateinit var tvTopTagPill: TextView
     private lateinit var lvSelector: ListView
     private lateinit var rvItems: RecyclerView
     private lateinit var tvNoData: TextView
@@ -75,7 +77,7 @@ class QuestionBookActivity : AppCompatActivity() {
     private var gridMode = false
     private var groupByDate = false // false = group by source type / chapter, true = group by date
     private var showUnderstood = true
-    private var selectedBook = "全部"
+    private var selectedBook = "全部试题本"
     private var selectedTag = "全部"
     private var selectedLeftIndex = 0
     private var searchQuery = ""
@@ -140,6 +142,8 @@ class QuestionBookActivity : AppCompatActivity() {
 
         spinnerBooks = findViewById(R.id.spinnerBooks)
         llTags = findViewById(R.id.llTagsContent)
+        hsvTagBar = findViewById(R.id.hsvTagBar)
+        tvTopTagPill = findViewById(R.id.tvTopActiveTagPill)
         lvSelector = findViewById(R.id.listViewSelector)
         rvItems = findViewById(R.id.recyclerViewItems)
         tvNoData = findViewById(R.id.textViewNoData)
@@ -147,10 +151,19 @@ class QuestionBookActivity : AppCompatActivity() {
         etSearch = findViewById(R.id.etSearchQb)
         btnToggleGrid = findViewById(R.id.btnToggleGrid)
 
+        val d = resources.displayMetrics.density
+        tvTopTagPill.background = GradientDrawable().apply {
+            setColor(Color.parseColor("#F39C12"))
+            setStroke((1.2f * d).toInt(), Color.WHITE)
+            cornerRadius = 4f * d
+        }
+        tvTopTagPill.setOnClickListener {
+            hsvTagBar.visibility = if (hsvTagBar.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
+
         val splitContainer = findViewById<LinearLayout>(R.id.splitContainer)
         val splitDivider = findViewById<View>(R.id.splitDivider)
         if (resources.configuration.screenWidthDp < 600) {
-            val d = resources.displayMetrics.density
             splitContainer.orientation = LinearLayout.VERTICAL
             lvSelector.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (124 * d).toInt())
             splitDivider.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (2 * d).toInt())
@@ -218,7 +231,7 @@ class QuestionBookActivity : AppCompatActivity() {
         })
 
         if (intent.getStringExtra("initial_tab") == "favorites") {
-            selectedBook = "全部"
+            selectedBook = "全部试题本"
         }
 
         applyRecyclerLayoutManager()
@@ -264,7 +277,7 @@ class QuestionBookActivity : AppCompatActivity() {
     }
 
     private fun setupBookSpinner() {
-        val books = linkedSetOf("全部", "我的收藏夹", "草稿本存档", "语文错题本", "数学错题本")
+        val books = linkedSetOf("全部试题本", "我的收藏夹", "草稿本存档", "语文错题本", "数学错题本")
         allRecords.forEach { if (it.bookName.isNotBlank()) books.add(it.bookName) }
         val bookList = books.toList()
         val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, bookList) {
@@ -295,6 +308,7 @@ class QuestionBookActivity : AppCompatActivity() {
     }
 
     private fun renderTagBar() {
+        tvTopTagPill.text = selectedTag
         llTags.removeAllViews()
         val tags = linkedSetOf("全部", "重点", "易错", "截屏", "拍照", "草稿", "文言文")
         allRecords.forEach { if (it.tag.isNotBlank()) tags.add(it.tag) }
@@ -336,7 +350,7 @@ class QuestionBookActivity : AppCompatActivity() {
 
     private fun rebuildGroups() {
         val filtered = allRecords.filter { r ->
-            val okBook = selectedBook == "全部" || r.bookName == selectedBook
+            val okBook = selectedBook == "全部试题本" || r.bookName == selectedBook
             val okTag = selectedTag == "全部" || r.tag == selectedTag
             val okUnderstood = showUnderstood || !r.understood
             val okSearch = searchQuery.isEmpty() ||
@@ -365,11 +379,26 @@ class QuestionBookActivity : AppCompatActivity() {
         leftGroups = groups
         selectedLeftIndex = selectedLeftIndex.coerceIn(0, (leftGroups.size - 1).coerceAtLeast(0))
 
-        lvSelector.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_activated_1, leftGroups.map { it.first })
+        val labels = leftGroups.map { it.first }
+        val d = resources.displayMetrics.density
+        val primary = UserProfileStore.getThemePrimaryColor(this)
+        val leftAdapter = object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, labels) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val tv = (super.getView(position, convertView, parent) as TextView)
+                val active = position == selectedLeftIndex
+                tv.textSize = 14.5f
+                tv.setPadding((16 * d).toInt(), (13 * d).toInt(), (12 * d).toInt(), (13 * d).toInt())
+                tv.setTypeface(null, if (active) Typeface.BOLD else Typeface.NORMAL)
+                tv.setTextColor(if (active) primary else Color.parseColor("#333333"))
+                tv.setBackgroundColor(if (active) Color.parseColor("#EEF5FC") else Color.WHITE)
+                return tv
+            }
+        }
+        lvSelector.adapter = leftAdapter
         lvSelector.choiceMode = ListView.CHOICE_MODE_SINGLE
-        lvSelector.setItemChecked(selectedLeftIndex, true)
         lvSelector.setOnItemClickListener { _, _, position, _ ->
             selectedLeftIndex = position
+            leftAdapter.notifyDataSetChanged()
             renderRightItems()
         }
         renderRightItems()

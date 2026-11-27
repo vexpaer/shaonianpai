@@ -100,12 +100,14 @@ class DesktopActivity : AppCompatActivity() {
                 R.id.buttonSynchronizeNow -> checkServer(showToast = true)
                 R.id.buttonSettings -> startActivity(Intent(this, SettingsActivity::class.java))
                 R.id.buttonLogout -> startActivity(Intent(this, LoginActivity::class.java))
+                R.id.nav_schedule -> startActivity(Intent(this, ScheduleActivity::class.java))
                 R.id.nav_selflearn -> startActivity(Intent(this, SelfLearnActivity::class.java))
                 R.id.nav_library -> startActivity(Intent(this, ResourceLibraryActivity::class.java))
                 R.id.nav_questionbook -> startActivity(Intent(this, QuestionBookActivity::class.java))
-                R.id.nav_apps -> startActivity(Intent(this, AppsLauncherActivity::class.java))
-                R.id.nav_schedule -> startActivity(Intent(this, ScheduleActivity::class.java))
-                R.id.nav_bookdetail -> startActivity(Intent(this, BookDetailActivity::class.java))
+                R.id.nav_apps -> BookbagDialog.show(this)
+                R.id.nav_clock -> startActivity(Intent(this, ScheduleActivity::class.java))
+                R.id.nav_rewards -> startActivity(Intent(this, BookDetailActivity::class.java))
+                R.id.nav_brightness -> showBrightnessDialog()
             }
             true
         }
@@ -131,6 +133,35 @@ class DesktopActivity : AppCompatActivity() {
                 drawerLayout.openDrawer(GravityCompat.START)
             }
         }
+        if (intent.getBooleanExtra("demo_open_bookbag", false)) {
+            rootView.post { BookbagDialog.show(this) }
+        }
+    }
+
+    private fun showBrightnessDialog() {
+        val sb = android.widget.SeekBar(this).apply {
+            max = 100
+            val cur = ((window.attributes.screenBrightness.takeIf { it > 0f } ?: 0.75f) * 100).toInt()
+            progress = cur
+            setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: android.widget.SeekBar?, p: Int, fromUser: Boolean) {
+                    if (fromUser) {
+                        val lp = window.attributes
+                        lp.screenBrightness = (p / 100f).coerceIn(0.08f, 1f)
+                        window.attributes = lp
+                    }
+                }
+                override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            })
+        }
+        val d = resources.displayMetrics.density
+        sb.setPadding((20 * d).toInt(), (16 * d).toInt(), (20 * d).toInt(), (12 * d).toInt())
+        android.app.AlertDialog.Builder(this)
+            .setTitle("屏幕亮度设置")
+            .setView(sb)
+            .setPositiveButton("确定", null)
+            .show()
     }
 
     override fun onResume() {
@@ -164,10 +195,9 @@ class DesktopActivity : AppCompatActivity() {
         val tvInfo = header.findViewById<TextView>(R.id.textViewServerInfo)
         UserProfileStore.applyAvatarTo(this, ivAvatar)
         val name = UserProfileStore.getUserName(this)
-        val cls = UserProfileStore.getClassName(this)
         val sid = UserProfileStore.getStudentId(this)
-        tvName.text = "$name（$cls）"
-        tvInfo.text = "学号 $sid · ${Repository.getServerUrl(this).removePrefix("http://").removePrefix("https://")}"
+        tvName.text = name
+        tvInfo.text = "$sid · ${Repository.getServerUrl(this).removePrefix("http://").removePrefix("https://")}"
         ivAvatar.setOnClickListener {
             drawerLayout.closeDrawer(GravityCompat.START)
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -305,15 +335,14 @@ class DesktopActivity : AppCompatActivity() {
     }
 
     private fun openDeskItem(key: String) {
-        val intent = when (key) {
-            "study" -> Intent(this, SelfLearnActivity::class.java)
-            "notebook" -> Intent(this, ResourceLibraryActivity::class.java)
-            "bookbag" -> Intent(this, AppsLauncherActivity::class.java)
-            "schedule", "clock" -> Intent(this, ScheduleActivity::class.java)
-            "rewards" -> Intent(this, BookDetailActivity::class.java)
-            "light" -> Intent(this, SettingsActivity::class.java)
-            else -> Intent(this, SelfLearnActivity::class.java)
+        when (key) {
+            "study" -> startActivity(Intent(this, SelfLearnActivity::class.java))
+            "notebook" -> startActivity(Intent(this, ResourceLibraryActivity::class.java))
+            "bookbag" -> BookbagDialog.show(this)
+            "schedule", "clock" -> startActivity(Intent(this, ScheduleActivity::class.java))
+            "rewards" -> startActivity(Intent(this, BookDetailActivity::class.java))
+            "light" -> startActivity(Intent(this, SettingsActivity::class.java))
+            else -> startActivity(Intent(this, SelfLearnActivity::class.java))
         }
-        startActivity(intent)
     }
 }
